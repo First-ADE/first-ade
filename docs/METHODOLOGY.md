@@ -34,10 +34,11 @@ graph LR
 
 ### Process
 0. **Verify Axiom Acceptance** — Ensure both Human and AI participants have accepted the core axioms
-1. Write user stories with acceptance criteria
-2. Define functional requirements
-3. Identify non-functional constraints
-4. Document assumptions and risks
+1. **Establish User Scenarios** — Define behavioral expectations via Given/When/Then
+2. **Commit Scenarios** — Scenarios MUST be committed to the specification before any tests are defined
+3. **Define Functional Requirements** — Derived from committed scenarios
+4. **Identify Constraints** — Performance, security, and infrastructure boundaries
+5. **Document Assumptions & Risks**
 
 ### Outputs
 - `.specify/specs/{feature}/spec.md`
@@ -193,23 +194,22 @@ ADE mandates a minimum of 3 clarification cycles:
 **Goal**: Execute the plan  
 **Governing Postulate**: Π.2.1, Π.2.2
 
-### Red-Green-Refactor Pattern
+### The Mandatory Pipeline
+**No implementation code shall be written until a failing test exists in the codebase.**
 
-Every feature implementation follows:
-
-```
-1. RED Commit
-   - Write failing test(s)
-   - Commit: "test: add failing tests for {feature}"
+1. **BDD Verification**: Review committed User Scenarios from phase 1.
+2. **RED Commit (Test-First)**
+   - Define a test that verifies a specific acceptance criterion.
+   - Run the test and confirm it fails.
+   - Commit: `test: add failing test for [Scenario ID]`
    
-2. GREEN Commit  
-   - Write minimal implementation to pass
-   - Commit: "feat: implement {feature}"
+3. **GREEN Commit (Implementation)**  
+   - Write the MINIMUM code necessary to make the test pass.
+   - Commit: `feat: implement [Scenario ID]`
    
-3. REFACTOR Commit (optional)
-   - Improve code without changing behavior
-   - Commit: "refactor: clean up {feature}"
-```
+4. **REFACTOR Commit (Standardization)**
+   - Clean up code while maintaining green status.
+   - Commit: `refactor: [description]`
 
 ### Commit Message Format
 ```

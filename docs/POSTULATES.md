@@ -28,6 +28,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.1.1**  | No implementation without a specification file        | If code exists to satisfy specs (Σ.1), then code without specs has no purpose   |
 | **Π.1.1a** | Requirements must be documented before specifications | Specs satisfy requirements (Σ.1); undocumented requirements cannot be satisfied |
 | **Π.1.1b** | Specifications must be machine-parseable              | Automated verification requires structured input                                |
+| **Π.1.1c** | Scenarios before Tests                                | No test is defined until a corresponding User Scenario is committed (BDD flow)  |
 
 ### From Σ.2 (Deterministic Verification)
 
@@ -36,6 +37,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.2.1**  | Tests MUST fail before implementation passes        | Determinism requires the Red-Green transition as proof of behavior change |
 | **Π.2.1a** | Test environments must be isolated and reproducible | Non-isolated environments introduce non-determinism                       |
 | **Π.2.1b** | Async operations must be awaitable with timeouts    | Unbounded async breaks deterministic verification                         |
+| **Π.2.1c** | Tests before Code                                   | No code is written until a failing test is written (TDD mandate)          |
 
 ### From Σ.3 (Traceable Rationale)
 
@@ -71,8 +73,9 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | ---------- | -------------------------------------------------------------------- | ----------------------------------- |
 | **Π.1.2**  | Use `.specify/` folders for all feature specs                        | Π.1.1 (spec files exist)            |
 | **Π.1.2a** | Spec format: `spec.md`, `plan.md`, `tasks.md`                        | Π.1.1b (machine-parseable)          |
+| **Π.1.2b** | Scenarios must use Given/When/Then syntax                            | Π.1.1c (Scenarios before Tests)     |
 | **Π.2.2**  | Red-Green-Refactor commit pattern mandatory                          | Π.2.1 (tests fail first)            |
-| **Π.2.2a** | Minimum 2 commits per feature: RED + GREEN                           | Π.2.1 (transition proof)            |
+| **Π.2.2a** | Minimum 3 commits per scenario: RED + GREEN + REFACTOR               | Π.2.1c (Tests before Code)          |
 | **Π.3.2**  | MADR format for all ADRs                                             | Π.3.1 (ADRs required)               |
 | **Π.3.2a** | ADRs include "Governing Postulate" field                             | Π.3.1 (trace to axioms)             |
 | **Π.4.2**  | One module = one responsibility                                      | Π.4.1 (single purpose)              |
