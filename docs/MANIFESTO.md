@@ -43,6 +43,8 @@ Principles          — Governance rules
     ↓
 ADRs                — Traced decisions
     ↓
+Specifications      — Executable contracts
+    ↓
 Implementation      — Axiom-aligned code
 ```
 
@@ -64,11 +66,13 @@ The architect thinks in axioms. The agent executes in code. The specification is
 We commit to:
 
 0. **Accept and internalize axioms** — No work begins without explicit acceptance
-1. **Specify before implement** — No code without a spec
-2. **Trace every decision** — Link to governing axioms
-3. **Verify deterministically** — Tests that prove, not assert
-4. **Document the why** — Rationale over ritual
-5. **Embrace AI symbiosis** — Humans architect, agents execute
+1. **Scenario before Test** — No test is defined until a User Scenario is committed (BDD)
+2. **Test before Code** — No code is written until a failing test is written (TDD)
+3. **Specify before implement** — All behavior must be traced to executable specifications
+4. **Trace every decision** — Every architectural choice links to governing axioms
+5. **Verify deterministically** — Tests that prove, not just assert
+6. **Document the why** — Rationale over ritual
+7. **Embrace AI symbiosis** — Humans architect, agents execute
 
 ---
 
