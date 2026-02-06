@@ -21,14 +21,14 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 
 *Direct derivations from axioms — the immediate logical consequences.*
 
-### From Σ.1 (Specification Primacy)
+### From Σ.1 (The Correctness Axiom)
 
-| ID         | Postulate                                             | Derivation                                                                      |
-| ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Π.1.1**  | No implementation without a specification file        | If code exists to satisfy specs (Σ.1), then code without specs has no purpose   |
-| **Π.1.1a** | Requirements must be documented before specifications | Specs satisfy requirements (Σ.1); undocumented requirements cannot be satisfied |
-| **Π.1.1b** | Specifications must be machine-parseable              | Automated verification requires structured input                                |
-| **Π.1.1c** | Scenarios before Tests                                | No test is defined until a corresponding User Scenario is committed (BDD flow)  |
+| ID         | Postulate                                             | Derivation                                                                                         |
+| ---------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Π.1.1**  | No implementation without a specification file        | If a correct solution exists (Σ.1), it is defined by the spec; code without a spec defines nothing |
+| **Π.1.1a** | Requirements must be documented before specifications | Specs satisfy requirements (Σ.1); undocumented requirements cannot be satisfied                    |
+| **Π.1.1b** | Specifications must be machine-parseable              | Automated verification requires structured input                                                   |
+| **Π.1.1c** | Scenarios before Tests                                | No test is defined until a corresponding User Scenario is committed (BDD flow)                     |
 
 ### From Σ.2 (Deterministic Verification)
 
@@ -109,7 +109,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 ```mermaid
 graph LR
     subgraph Axioms
-        S1[Σ.1 Specification Primacy]
+        S1[Σ.1 The Correctness Axiom]
         S2[Σ.2 Deterministic Verification]
         S3[Σ.3 Traceable Rationale]
         S4[Σ.4 Emergent Complexity]

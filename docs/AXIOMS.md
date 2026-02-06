@@ -17,16 +17,16 @@ Axioms are denoted with the Greek letter **Sigma (Σ)** followed by a number.
 
 ## The Five Axioms
 
-### Σ.1 — Specification Primacy
+### Σ.1 — The Correctness Axiom
 
-> **"Code exists to satisfy specifications; specifications exist to satisfy requirements."**
+> **"A correct solution exists, given a specification’s requirements."**
 
-**Justification**: Code without a specification is untestable. A specification without a requirement is purposeless. The chain of intent flows from human need to machine execution.
+**Justification**: Engineering is not improved by ambiguity. If requirements are defined, a solution that satisfies them must exist. If no such solution exists, the requirements are flawed. This places the burden of correctness on the specification.
 
 **Implications**:
-- No feature implementation without a specification file
-- Specifications are first-class artifacts, not afterthoughts
-- Requirements traceability is mandatory
+- Specifications are strictly binding contracts
+- Solving a problem requires first defining it (specifying)
+- If a spec cannot be implemented, the spec (requirements) must change, not the "interpretation"
 
 ---
 
@@ -88,13 +88,13 @@ Axioms are denoted with the Greek letter **Sigma (Σ)** followed by a number.
 
 ## Axiom Table
 
-| ID  | Name                       | One-Line Statement                                  |
-| --- | -------------------------- | --------------------------------------------------- |
-| Σ.1 | Specification Primacy      | Code satisfies specs; specs satisfy requirements    |
-| Σ.2 | Deterministic Verification | All behavior verifiable through deterministic tests |
-| Σ.3 | Traceable Rationale        | Every decision traces to an axiom                   |
-| Σ.4 | Emergent Complexity        | Complex systems from simple, aligned components     |
-| Σ.5 | AI Symbiosis               | Humans architect; agents execute                    |
+| ID  | Name                       | One-Line Statement                                         |
+| --- | -------------------------- | ---------------------------------------------------------- |
+| Σ.1 | The Correctness Axiom      | A correct solution exists given specification requirements |
+| Σ.2 | Deterministic Verification | All behavior verifiable through deterministic tests        |
+| Σ.3 | Traceable Rationale        | Every decision traces to an axiom                          |
+| Σ.4 | Emergent Complexity        | Complex systems from simple, aligned components            |
+| Σ.5 | AI Symbiosis               | Humans architect; agents execute                           |
 
 ---
 

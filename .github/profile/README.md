@@ -33,13 +33,13 @@ First ADE pioneers **Axiom Driven Engineering** — a methodology where every ar
 
 ## 📜 The Five Axioms
 
-| ID      | Axiom                      | Statement                                           |
-| ------- | -------------------------- | --------------------------------------------------- |
-| **Σ.1** | Specification Primacy      | Code satisfies specs; specs satisfy requirements    |
-| **Σ.2** | Deterministic Verification | All behavior verifiable through deterministic tests |
-| **Σ.3** | Traceable Rationale        | Every decision traces to an axiom                   |
-| **Σ.4** | Emergent Complexity        | Complex systems from simple, aligned components     |
-| **Σ.5** | AI Symbiosis               | Humans architect; agents execute                    |
+| ID      | Axiom                      | Statement                                                  |
+| ------- | -------------------------- | ---------------------------------------------------------- |
+| **Σ.1** | The Correctness Axiom      | A correct solution exists given specification requirements |
+| **Σ.2** | Deterministic Verification | All behavior verifiable through deterministic tests        |
+| **Σ.3** | Traceable Rationale        | Every decision traces to an axiom                          |
+| **Σ.4** | Emergent Complexity        | Complex systems from simple, aligned components            |
+| **Σ.5** | AI Symbiosis               | Humans architect; agents execute                           |
 
 ## 🧭 Core Principles
 
