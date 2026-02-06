@@ -1,0 +1,12 @@
+# First ADE Manifesto (Axiom Driven Engineering)
+
+Axiom Driven Engineering (ADE) is a methodology focused on building software from first principles, where every architectural decision is grounded in a set of core axioms.
+
+## Core Axioms
+1. **Spec-First**: Implementation never begins without a verified specification.
+2. **Deterministic Foundations**: Logic engines (like WARScribe) must be edition-agnostic and deterministic.
+3. **Agentic Integration**: Tools are designed to be used by both humans and AI agents seamlessly.
+4. **Local Sovereignty**: Prioritize local execution of LLMs and data processing for privacy and performance.
+
+## The Local RAG Project
+This project implements a local Retrieval-Augmented Generation pipeline to ground AI agents in First ADE's private knowledge base. Using Ollama and ChromaDB, we ensure that sensitive organizational axioms remain on-premises while providing high-quality, context-aware assistance.

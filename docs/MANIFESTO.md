@@ -63,6 +63,7 @@ The architect thinks in axioms. The agent executes in code. The specification is
 
 We commit to:
 
+0. **Accept and internalize axioms** — No work begins without explicit acceptance
 1. **Specify before implement** — No code without a spec
 2. **Trace every decision** — Link to governing axioms
 3. **Verify deterministically** — Tests that prove, not assert
