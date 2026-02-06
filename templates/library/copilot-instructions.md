@@ -2,6 +2,8 @@
 
 ## Project Context
 
+**AXIOM ACCEPTANCE**: You must accept the [ADE Core Axioms](https://github.com/First-ADE/.github/blob/main/docs/AXIOMS.md) before assisting. All suggestions must align with these axioms.
+
 This is a Python library following **Axiom Driven Engineering (ADE)** principles.
 
 ## Code Style

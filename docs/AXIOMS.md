@@ -1,5 +1,8 @@
 # ADE Axioms
 
+> [!IMPORTANT]
+> **AXIOM ACCEPTANCE MANDATE**: Axioms are the absolute foundation of this system. All Humans and LLM Agents **MUST** read and explicitly accept these stated axioms before proceeding to read any specification or implementation detail. If you do not accept these axioms, you cannot operate within an ADE environment.
+
 **The Fundamental Truths of Axiom Driven Engineering**
 
 ---

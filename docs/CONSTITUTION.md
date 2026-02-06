@@ -12,6 +12,17 @@ All constitutional principles include a traceability reference to their governin
 
 ---
 
+## Article 0: Axiom Acceptance
+
+### §0.1 Mandatory Acceptance
+**Every participant, whether Human or LLM Agent, MUST read and explicitly accept the ADE Core Axioms before interacting with any project specification or code.** *(Σ.1, Σ.5)*
+
+- Acceptance is a prerequisite for all development activity.
+- Agents must acknowledge acceptance in their initial system prompt or session start.
+- Failure to accept the axioms disqualifies the participant from contributing to or modifying the project.
+
+---
+
 ## Article I: Specification Governance
 
 *Derived from Σ.1 and Π.1.x postulates*

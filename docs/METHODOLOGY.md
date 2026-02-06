@@ -33,6 +33,7 @@ graph LR
 - Stakeholder feedback
 
 ### Process
+0. **Verify Axiom Acceptance** — Ensure both Human and AI participants have accepted the core axioms
 1. Write user stories with acceptance criteria
 2. Define functional requirements
 3. Identify non-functional constraints
