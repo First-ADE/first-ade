@@ -50,7 +50,7 @@ As an agent, I want verification that tests exist before writing implementation 
 
 **Acceptance**:
 1. No corresponding test file → operation blocked, test creation required
-2. Test files exist but insufficient coverage → flagged
+2. Test files exist but insufficient coverage → violation raised at configured strictness level (default: warn; configurable per .ade-compliance.yml)
 3. Adequate tests exist → operation allowed
 
 ---
@@ -85,7 +85,7 @@ As a Human Architect, I want an immutable audit trail of all decisions with axio
 **Acceptance**:
 1. Compliance check completes → results logged (timestamp, actor, decision, axiom, rationale)
 2. Override recorded → audit includes rule, rationale, timestamp, affected components
-3. 30-day trend report → violation counts, trends, severity distributions by axiom
+3. 30-day trend report → JSON compliance report (per FR-012) with violation counts, trends, severity distributions by axiom; generated on-demand via CLI (`generate-report`) or HTTP API (`GET /reports`)
 
 ---
 
@@ -117,7 +117,7 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **No `.ade-compliance.yml`**: Use sensible defaults with warning
 - **Conflicting axioms**: Detect conflict, escalate to Human Architect
 - **Legacy code**: Adopt incrementally via audit → warn → enforce levels (per-axiom)
-- **Check exceeds 10s budget**: Log performance warning, Human Architect can adjust thresholds
+- **Check exceeds 10s budget**: Log performance warning; Human Architect can adjust via `.ade-compliance.yml` `performance.check_timeout_seconds`
 - **GitHub unreachable**: Queue locally, exponential backoff (5 retries / 15 min), then block agent
 - **Override expires**: Auto-revert to enforcement; notify responsible party 7 days before
 - **Concurrent checks on same file**: Serialize per-file to prevent audit trail race conditions
@@ -131,7 +131,7 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **FR-003**: Validate traceability links between code, tests, requirements, and axioms (Π.3.1)
 - **FR-004**: Validate specification format against required structure (EARS patterns, correctness properties)
 - **FR-005**: Detect architectural changes and verify corresponding ADRs exist (Π.4.1)
-- **FR-006**: Block non-compliant operations with detailed violation reports and remediation guidance
+- **FR-006**: Block non-compliant operations with detailed violation reports and remediation guidance (see also FR-025 for internal-error blocking)
 - **FR-007**: Log all compliance decisions to an immutable, tamper-evident audit trail
 - **FR-008**: Classify decisions by criticality (low/medium/high/critical); route high/critical to Human Architect
 - **FR-009**: Escalate to Human Architect on 3 consecutive agent failures (Π.5.3)
@@ -149,8 +149,8 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **FR-021**: Human Architect override of violations with mandatory rationale
 - **FR-022**: Track % of decisions requiring Human review; alert when >5%
 - **FR-023**: Block deployments with unresolved violations unless Human Architect overrides
-- **FR-024**: Compliance dashboard: metrics, violation trends, component health
-- **FR-025**: Fail-closed on internal failures — block rather than pass non-compliant code
+- **FR-024**: Compliance dashboard: metrics, violation trends, component health *(Deferred: separate feature spec; data layer in US-6 supports future dashboard)*
+- **FR-025**: Fail-closed on internal failures — block rather than pass non-compliant code (see also FR-006 for violation-based blocking)
 - **FR-026**: Expose observability: latency percentiles (p50/p95/p99), violation counts by axiom/severity, escalation queue depth, cache hit rate
 - **FR-027**: Three configurable strictness levels per axiom: audit, warn, enforce
 - **FR-028**: Queue escalation notifications locally on delivery failure; retry with exponential backoff (5 retries / 15 min)
@@ -159,15 +159,15 @@ As an AI agent, I want to self-check compliance before execution and provide att
 
 ### Key Entities
 
-| Entity               | Description                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Axiom**            | ADE principle (e.g., Π.1.1) defining a compliance rule. Categories: SPECIFICATION, TEST, TRACEABILITY, ARCHITECTURE, ESCALATION       |
-| **Violation**        | Breach record: severity, file, line, axiom ref, timestamp, remediation, lifecycle state (New → Acknowledged → Resolved \| Overridden) |
-| **TraceLink**        | Directional connection (implements, validates, traces_to) between code, tests, requirements, axioms                                   |
-| **Decision**         | Recorded choice: actor, axiom ref, rationale, criticality, timestamp                                                                  |
-| **Override**         | Human Architect exception: mandatory scope, rationale, optional expiration (default 90d), auto-reverts on expiry                      |
-| **Attestation**      | Agent's signed compliance confirmation: axioms applied, satisfaction status                                                           |
-| **ComplianceReport** | JSON summary of checks, traceability matrix, violations, and metrics                                                                  |
+| Entity               | Description                                                                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Axiom**            | ADE principle reference (Axiom `Σ.X` or Postulate `Π.X.Y`) defining a compliance rule. Categories: SPECIFICATION, TEST, TRACEABILITY, ARCHITECTURE, ESCALATION |
+| **Violation**        | Breach record: severity, file, line, axiom ref, timestamp, remediation, lifecycle state (New → Acknowledged → Resolved \| Overridden)                          |
+| **TraceLink**        | Directional connection (implements, validates, traces_to) between code, tests, requirements, axioms                                                            |
+| **Decision**         | Recorded choice: actor, axiom ref, rationale, criticality, timestamp                                                                                           |
+| **Override**         | Human Architect exception: mandatory scope, rationale, optional expiration (default 90d), auto-reverts on expiry                                               |
+| **Attestation**      | Agent's signed compliance confirmation: axioms applied, satisfaction status                                                                                    |
+| **ComplianceReport** | JSON summary of checks, traceability matrix, violations, and metrics                                                                                           |
 
 ## Success Criteria *(mandatory)*
 

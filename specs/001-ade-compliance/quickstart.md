@@ -8,6 +8,7 @@
 - Python 3.11+
 - Git repository with `.ade-compliance.yml` (optional — sensible defaults apply)
 - `pip` or `uv` for package installation
+- `pyadr` for ADR management (`pip install pyadr`)
 
 ## Install
 
@@ -88,6 +89,27 @@ curl http://127.0.0.1:8420/metrics
 | `audit`   | Log violations, no blocking                   | Initial adoption, baseline measurement |
 | `warn`    | Display violations, allow with acknowledgment | Transitional period                    |
 | `enforce` | Block non-compliant operations                | Production enforcement                 |
+
+## ADR Management (MANDATORY)
+
+All architectural decisions MUST be created via `pyadr` CLI. Never create ADR files manually.
+
+```bash
+# Initialize ADR repo (once per project)
+pyadr init
+
+# Propose a new decision
+pyadr propose "Use Tree-sitter for multi-language parsing"
+
+# Accept after review
+pyadr accept docs/decisions/NNNN-use-tree-sitter-for-multi-language-parsing.md
+
+# Generate table of contents
+pyadr toc
+
+# Validate ADR repo integrity
+pyadr check-adr-repo
+```
 
 ## Exit Codes
 

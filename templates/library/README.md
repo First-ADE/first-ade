@@ -26,7 +26,7 @@ This project follows [Axiom Driven Engineering](https://github.com/First-ADE) pr
 
 - **Σ.1**: Specifications in `.specify/specs/`
 - **Σ.2**: Tests verify all behavior
-- **Σ.3**: ADRs in `docs/adr/`
+- **Σ.3**: ADRs in `docs/decisions/`
 - **Σ.5**: AI context in `.gemini.md`, `.claude.md`
 
 ## 🛠️ Development
@@ -68,7 +68,7 @@ mypy src/
 ## 📖 Documentation
 
 - [API Reference](./docs/api.md)
-- [Architecture Decision Records](./docs/adr/)
+- [Architecture Decision Records](./docs/decisions/)
 - [Specifications](./specs/)
 
 ## 🤝 Contributing

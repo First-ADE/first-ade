@@ -10,7 +10,7 @@ Agentic-first compliance enforcement framework for Axiom Driven Engineering. Imp
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: Tree-sitter (multi-lang parsing), Click (CLI), FastAPI (HTTP API), Pydantic (data models), SQLAlchemy (audit persistence)
+**Primary Dependencies**: Tree-sitter (multi-lang parsing), Click (CLI), FastAPI (HTTP API), Pydantic (data models), SQLAlchemy (audit persistence), pyadr (MADR ADR lifecycle CLI)
 **Storage**: SQLite (local audit trail, low volume — hundreds/day); JSON config files
 **Testing**: pytest with pytest-cov, hypothesis (property-based), pytest-asyncio
 **Target Platform**: Local developer machine (CLI + pre-commit hook); HTTP API for agent integration
@@ -23,19 +23,56 @@ Agentic-first compliance enforcement framework for Axiom Driven Engineering. Imp
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-| #   | Principle                  | Status | Evidence                                                                                         |
-| --- | -------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
-| I   | Axiom Acceptance           | ✅ PASS | Spec maps all FRs to axiom references (Π.1.1, Π.2.1, Π.3.1, etc.)                                |
-| II  | Specification Governance   | ✅ PASS | spec.md complete; plan.md (this file); tasks.md follows                                          |
-| III | Deterministic Verification | ✅ PASS | FR-015 mandates test determinism; pytest with seeded RNG; no external I/O in unit tests          |
-| IV  | Traceable Decision Records | ✅ PASS | ADR required for Tree-sitter selection, HTTP→MCP migration, fail-closed policy (see research.md) |
-| V   | Architectural Constraints  | ✅ PASS | Single-direction dependency flow: CLI → Services → Engines → Models; no circular deps            |
-| VI  | AI Collaboration           | ✅ PASS | Agent context files maintained; FR-013/014 enforce agent self-check + attestation                |
-| VII | Coverage Requirements      | ✅ PASS | SC-007 mandates ≥80% core coverage; FR-016 enforces configurable thresholds                      |
+| #   | Principle                  | Status | Evidence                                                                                                                                                                               |
+| --- | -------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I   | Axiom Acceptance           | ✅ PASS | Spec maps all FRs to axiom references (Π.1.1, Π.2.1, Π.3.1, etc.)                                                                                                                      |
+| II  | Specification Governance   | ✅ PASS | spec.md complete; plan.md (this file); tasks.md follows                                                                                                                                |
+| III | Deterministic Verification | ✅ PASS | FR-015 mandates test determinism; pytest with seeded RNG; no external I/O in unit tests                                                                                                |
+| IV  | Traceable Decision Records | ✅ PASS | ADRs managed exclusively via `pyadr` CLI (MADR format); required for Tree-sitter selection, HTTP→MCP migration, fail-closed policy, strictness levels, SQLite choice (see research.md) |
+| V   | Architectural Constraints  | ✅ PASS | Single-direction dependency flow: CLI → Services → Engines → Models; no circular deps                                                                                                  |
+| VI  | AI Collaboration           | ✅ PASS | Agent context files maintained; FR-013/014 enforce agent self-check + attestation                                                                                                      |
+| VII | Coverage Requirements      | ✅ PASS | SC-007 mandates ≥80% core coverage; FR-016 enforces configurable thresholds                                                                                                            |
 
 **Gate Result**: ✅ ALL PASS — proceed to Phase 0.
 
 ## Project Structure
+
+### ADR Management (MANDATORY: pyadr CLI)
+
+All ADRs MUST be created and managed exclusively via the `pyadr` CLI tool from [adr.github.io](https://adr.github.io/adr-tooling/). Manual creation or inference of ADR files is PROHIBITED.
+
+```bash
+# Initialize ADR repo (once)
+pyadr init
+
+# Propose a new ADR (MADR format enforced)
+pyadr propose "Use Tree-sitter for multi-language parsing"
+
+# Accept/reject after review
+pyadr accept docs/decisions/NNNN-use-tree-sitter-for-multi-language-parsing.md
+pyadr reject docs/decisions/NNNN-rejected-decision.md
+
+# Generate table of contents
+pyadr toc
+
+# Sanity check ADR repo
+pyadr check-adr-repo
+
+# Git-integrated workflow (branches + stages automatically)
+git adr propose "Use Tree-sitter for multi-language parsing"
+git adr accept docs/decisions/NNNN-use-tree-sitter-for-multi-language-parsing.md
+```
+
+```text
+docs/decisions/           # ADR directory (managed by pyadr)
+├── index.md              # Auto-generated ToC (pyadr toc)
+├── adr_template.md       # MADR template (pyadr init)
+├── 0001-use-tree-sitter-for-multi-language-parsing.md
+├── 0002-fail-closed-architecture.md
+├── 0003-strictness-levels-for-incremental-adoption.md
+├── 0004-local-http-api-evolving-to-mcp.md
+└── 0005-sqlite-for-local-audit-trail.md
+```
 
 ### Documentation (this feature)
 

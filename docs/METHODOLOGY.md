@@ -113,7 +113,7 @@ ADE mandates a minimum of 3 clarification cycles:
 
 ### Outputs
 - `.specify/specs/{feature}/plan.md`
-- `docs/adr/XXXX-{decision}.md` (as needed)
+- `docs/decisions/XXXX-{decision}.md` (as needed)
 
 ### Plan.md Template
 ```markdown

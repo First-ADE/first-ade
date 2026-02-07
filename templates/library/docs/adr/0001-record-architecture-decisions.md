@@ -18,7 +18,7 @@ Without this, knowledge is lost and decisions cannot be revisited.
 We will use Architecture Decision Records (ADRs) in the MADR format with
 ADE extensions (Governing Postulate, Axiom Traceability).
 
-ADRs will be stored in `docs/adr/` with the naming convention:
+ADRs will be stored in `docs/decisions/` with the naming convention:
 `NNNN-short-title.md`
 
 ## Consequences

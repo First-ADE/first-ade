@@ -3,12 +3,20 @@
 **Phase**: 0 — Outline & Research
 **Date**: 2026-02-06
 
+## ADR Tooling (MANDATORY)
+
+**Decision**: All ADRs MUST be created via `pyadr` CLI ([adr.github.io](https://adr.github.io/adr-tooling/)) using MADR format. Manual creation or inference of ADR files is PROHIBITED.
+**Rationale**: CLI-enforced MADR format ensures consistent structure, auditability, and lifecycle management (Proposed → Accepted → Deprecated | Superseded). The `pyadr` tool is Python-native, integrates with git, and supports pre-merge checks.
+**Install**: `pip install pyadr`
+**Init**: `pyadr init` (creates `docs/decisions/` with MADR template)
+
 ## Technology Decisions
 
 ### 1. Multi-Language Parsing — Tree-sitter
 
 **Decision**: Tree-sitter for AST parsing across Python, TypeScript, JavaScript, Java
 **Rationale**: Mature incremental parser with consistent API across languages. Python bindings (`tree-sitter` + language grammars) allow uniform traceability extraction without language-specific parsers.
+**ADR CLI**: `pyadr propose "Use Tree-sitter for multi-language parsing"`
 **Alternatives considered**:
 - regex-based extraction — fragile, can't handle nested structures
 - Language-specific ASTs (ast module, ts-morph, etc.) — requires 4 separate implementations
@@ -41,12 +49,14 @@
 
 **Decision**: All internal failures block operations (fail-closed)
 **Rationale**: Constitutional enforcement system cannot have exploitable gaps. A fail-open stance would allow non-compliant code through during outages.
+**ADR CLI**: `pyadr propose "Fail-closed architecture for compliance enforcement"`
 **ADR required**: Yes — documents the security tradeoff and developer experience impact
 
 ### 6. Strictness Levels (Incremental Adoption)
 
 **Decision**: Three levels — audit, warn, enforce — configurable per axiom
 **Rationale**: Legacy codebases cannot adopt full enforcement immediately. Graduated adoption reduces friction while allowing measurable progress.
+**ADR CLI**: `pyadr propose "Three strictness levels for incremental adoption"`
 **ADR required**: Yes — documents the compliance tradeoff
 
 ### 7. Override Lifecycle
