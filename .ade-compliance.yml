@@ -1,0 +1,29 @@
+# ADE Compliance Configuration
+# This file defaults to strictness: warn for incremental adoption.
+
+global:
+  strictness: warn
+  enabled: true
+  audit_path: ".ade_compliance/audit.sqlite"
+
+engines:
+  spec:
+    enabled: true
+    strictness: warn
+    
+  test:
+    enabled: true
+    strictness: warn
+    min_coverage: 80
+    
+  traceability:
+    enabled: true
+    strictness: warn
+    languages:
+      - python
+      - typescript
+      - javascript
+      - java
+
+reporting:
+  trend_retention_days: 90
