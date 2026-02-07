@@ -69,4 +69,4 @@ Check `.specify/specs/` before implementing new features.
 
 ## ADR References
 
-Check `docs/adr/` before making architectural decisions.
+Check `docs/decisions/` before making architectural decisions.

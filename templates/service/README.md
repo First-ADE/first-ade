@@ -57,7 +57,7 @@ This service follows [ADE principles](https://github.com/First-ADE):
 | ------- | ------------------------------ |
 | **Σ.1** | Specs in `.specify/specs/`     |
 | **Σ.2** | pytest + integration tests     |
-| **Σ.3** | ADRs in `docs/adr/`            |
+| **Σ.3** | ADRs in `docs/decisions/`      |
 | **Σ.4** | Route → Service → Model layers |
 | **Σ.5** | AI context in `.gemini.md`     |
 
