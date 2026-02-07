@@ -1,0 +1,282 @@
+openapi: "3.1.0"
+info:
+  title: ADE Compliance Framework API
+  version: "1.0.0"
+  description: Local HTTP API for agent compliance checks, attestation, and reporting. Binds to 127.0.0.1 only.
+
+servers:
+  - url: http://127.0.0.1:8420
+    description: Local compliance server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Server healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+                  version: { type: string }
+
+  /check:
+    post:
+      summary: Run compliance checks on specified files or paths
+      operationId: runChecks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckRequest"
+      responses:
+        "200":
+          description: Checks completed (may contain violations)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReport"
+        "503":
+          description: Internal failure - fail-closed, check could not complete
+
+  /check/spec:
+    post:
+      summary: Run specification-first checks only (FR-001, FR-004)
+      operationId: checkSpec
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReport"
+
+  /check/test:
+    post:
+      summary: Run test-first checks only (FR-002, FR-015, FR-016)
+      operationId: checkTest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReport"
+
+  /check/traceability:
+    post:
+      summary: Run traceability checks only (FR-003, FR-020)
+      operationId: checkTraceability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplianceReport"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReport"
+
+  /attest:
+    post:
+      summary: Submit agent attestation (FR-014)
+      operationId: submitAttestation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationRequest"
+      responses:
+        "201":
+          description: Attestation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attestation"
+        "422":
+          description: Validation failed
+
+  /reports:
+    get:
+      summary: Get compliance report for a commit (FR-012)
+      operationId: getReport
+      parameters:
+        - name: commit_sha
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComplianceReport"
+
+  /overrides:
+    post:
+      summary: Create override (FR-021, FR-029) - Human Architect only
+      operationId: createOverride
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OverrideRequest"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Override"
+        "403":
+          description: Not authorized (non-Human Architect)
+
+  /metrics:
+    get:
+      summary: Prometheus-compatible metrics (FR-026)
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Metrics in Prometheus exposition format
+          content:
+            text/plain:
+              schema: { type: string }
+
+components:
+  schemas:
+    CheckRequest:
+      type: object
+      required: [paths]
+      properties:
+        paths:
+          type: array
+          items: { type: string }
+          description: File or directory paths to check (relative to repo root)
+        engines:
+          type: array
+          items: { type: string, enum: [spec, test, traceability, adr] }
+          description: Specific engines to run (default all)
+        agent_id:
+          type: string
+          description: Caller agent identifier (for audit trail)
+        strictness:
+          type: string
+          enum: [audit, warn, enforce]
+          description: Override config strictness for this check
+
+    ComplianceReport:
+      type: object
+      properties:
+        schema_version: { type: string }
+        generated_at: { type: string, format: date-time }
+        commit_sha: { type: string }
+        check_duration_ms: { type: integer }
+        passed: { type: boolean }
+        checks_run:
+          type: array
+          items:
+            type: object
+            properties:
+              engine: { type: string }
+              passed: { type: boolean }
+              violation_count: { type: integer }
+        violations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Violation"
+        metrics:
+          type: object
+          properties:
+            coverage_pct: { type: number }
+            violation_count_by_severity:
+              type: object
+              additionalProperties: { type: integer }
+
+    Violation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        axiom_id: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        file_path: { type: string }
+        line_number: { type: integer, nullable: true }
+        message: { type: string }
+        remediation: { type: string }
+        state: { type: string, enum: [NEW, ACKNOWLEDGED, RESOLVED, OVERRIDDEN] }
+
+    AttestationRequest:
+      type: object
+      required: [agent_id, task_ref, axioms_checked, all_satisfied]
+      properties:
+        agent_id: { type: string }
+        task_ref: { type: string }
+        axioms_checked:
+          type: array
+          items: { type: string }
+        all_satisfied: { type: boolean }
+        violations_found:
+          type: array
+          items: { type: string, format: uuid }
+        confidence_score: { type: number, minimum: 0, maximum: 1 }
+
+    Attestation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        agent_id: { type: string }
+        task_ref: { type: string }
+        axioms_checked: { type: array, items: { type: string } }
+        all_satisfied: { type: boolean }
+        confidence_score: { type: number }
+        escalated: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    OverrideRequest:
+      type: object
+      required: [axiom_id, scope_type, scope_value, rationale]
+      properties:
+        axiom_id: { type: string }
+        scope_type: { type: string, enum: [FILE, DIRECTORY, COMPONENT] }
+        scope_value: { type: string }
+        rationale: { type: string, minLength: 20 }
+        expires_in_days: { type: integer, default: 90 }
+        is_permanent: { type: boolean, default: false }
+        permanent_justification: { type: string }
+
+    Override:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        axiom_id: { type: string }
+        scope_type: { type: string }
+        scope_value: { type: string }
+        rationale: { type: string }
+        created_by: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        is_permanent: { type: boolean }
