@@ -507,3 +507,280 @@ compliance:
     - java
 ```
 
+
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Specification Existence Validation
+
+*For any* implementation task, the Compliance Checker should verify that both requirements.md and design.md exist in the spec directory, and reject tasks that lack specifications.
+
+**Validates: Requirements 2.1, 2.2, 2.3**
+
+### Property 2: Test-First Enforcement
+
+*For any* implementation code file, the Compliance Checker should verify that corresponding test files exist with test cases covering the functionality, and block implementation when tests are missing.
+
+**Validates: Requirements 1.2, 3.1, 3.2, 3.3**
+
+### Property 3: Traceability Validation
+
+*For any* code module, test, or requirement, the Compliance Checker should verify that traceability links exist connecting code → tests → requirements → axioms, generate a complete traceability matrix, and block commits when links are missing or broken.
+
+**Validates: Requirements 1.3, 4.1, 4.2, 4.3, 4.4, 4.5**
+
+### Property 4: Architecture Compliance
+
+*For any* code change that affects system architecture, the Compliance Checker should detect the architectural impact, verify compliance with architecture axioms, and validate against approved architectural patterns.
+
+**Validates: Requirements 1.4, 5.3, 5.4**
+
+### Property 5: Compliance Check Blocking
+
+*For any* failed compliance check, the Compliance Checker should block the operation and provide a detailed violation report with specific remediation guidance.
+
+**Validates: Requirements 1.5**
+
+### Property 6: Specification Format Validation
+
+*For any* specification document (requirements or design), the Compliance Checker should validate that it follows the required format structure, including EARS patterns for requirements and "for all" quantification for correctness properties.
+
+**Validates: Requirements 2.4, 10.1, 10.2, 10.3, 10.4**
+
+### Property 7: Test Determinism Validation
+
+*For any* test file, the Compliance Checker should analyze for non-deterministic patterns (external state dependencies, timing dependencies, order dependencies) and flag tests that are not deterministic and repeatable.
+
+**Validates: Requirements 3.4, 8.1, 8.2, 8.3, 8.4**
+
+### Property 8: ADR Requirement Enforcement
+
+*For any* code change that affects system architecture, the Compliance Checker should determine if an ADR is required, verify that the ADR exists with required sections (rationale, alternatives, consequences), and block changes when ADRs are missing.
+
+**Validates: Requirements 5.1, 5.2, 7.1, 7.2, 7.3**
+
+### Property 9: Pre-Commit Hook Behavior
+
+*For any* commit attempt, the Pre-Commit Hook should execute all compliance checks, block commits when checks fail, allow commits when checks pass, and log all results to the audit trail.
+
+**Validates: Requirements 6.1, 6.2, 6.3, 6.4**
+
+### Property 10: Coverage Threshold Enforcement
+
+*For any* code commit, the Compliance Checker should calculate test coverage metrics at module, file, and function levels, compare against configured thresholds, and block commits when coverage falls below thresholds.
+
+**Validates: Requirements 9.1, 9.2, 9.3, 9.4**
+
+### Property 11: Escalation Protocol Routing
+
+*For any* decision requiring Human Architect review (axiom disputes, constitutional amendments, three-strike failures), the Escalation Protocol should route the decision to the Human Architect with full context, record the decision with rationale in the audit trail, and provide all attempted solutions and failure reasons.
+
+**Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5**
+
+### Property 12: Audit Trail Immutability
+
+*For any* decision made by an Agent or Human, the System should log it to the Audit Trail with all required fields (timestamp, actor, decision, axiom reference, rationale), ensure the trail is immutable and tamper-evident, and support querying by date, actor, axiom, or component.
+
+**Validates: Requirements 18.1, 18.2, 18.3, 18.4**
+
+### Property 13: Violation Tracking and Alerting
+
+*For any* compliance violation, the System should record it with full context, categorize it by severity/axiom/component, generate trend reports showing patterns over time, and alert the Human Architect when violation rates exceed thresholds.
+
+**Validates: Requirements 19.1, 19.2, 19.3, 19.4**
+
+### Property 14: Override Management
+
+*For any* Human Architect override, the System should record it in the Audit Trail with all required fields (rule overridden, rationale, timestamp, affected components), generate override reports for periodic review, and support querying by axiom, date, or component.
+
+**Validates: Requirements 20.1, 20.2, 20.3, 20.4**
+
+### Property 15: Machine-Readable Compliance Reports
+
+*For any* compliance check execution, the System should generate a report in valid JSON format with schema version, all axiom checks with pass/fail status, and traceability links in structured format that is parseable by standard JSON tools.
+
+**Validates: Requirements 28.1, 28.2, 28.3, 28.4, 28.5**
+
+### Property 16: Agent Attestation Enforcement
+
+*For any* completed work by an Agent, the Agent should provide a compliance attestation listing all applicable axioms with satisfaction status, signed with agent identifier and timestamp, and the System should reject work lacking proper attestation.
+
+**Validates: Requirements 34.1, 34.2, 34.3, 34.4, 34.5**
+
+### Property 17: Criticality-Based Decision Routing
+
+*For any* decision, the System should classify it by criticality (low, medium, high, critical), automatically approve low/medium decisions that pass compliance checks, route high/critical decisions to Human Architect review, track the percentage of decisions requiring human review, and alert when the percentage exceeds 5%.
+
+**Validates: Requirements 35.1, 35.2, 35.3, 35.4, 35.5**
+
+## Error Handling
+
+### Error Categories
+
+1. **Validation Errors**: Specification format violations, missing traceability, etc.
+   - Return detailed error messages with specific remediation guidance
+   - Block operations until errors are resolved
+   - Log to audit trail
+
+2. **System Errors**: File I/O failures, database errors, parser failures
+   - Log errors with full stack traces
+   - Provide graceful degradation where possible
+   - Alert Human Architect for critical system failures
+
+3. **Configuration Errors**: Invalid configuration files, missing required settings
+   - Validate configuration on startup
+   - Provide clear error messages with examples
+   - Use sensible defaults where appropriate
+
+4. **Performance Errors**: Checks exceeding 10-second threshold
+   - Log performance warnings
+   - Suggest optimizations (incremental checking, caching)
+   - Allow Human Architect to adjust thresholds
+
+### Error Recovery
+
+- **Transient Failures**: Retry with exponential backoff
+- **Permanent Failures**: Escalate to Human Architect
+- **Partial Failures**: Complete what's possible, report what failed
+- **Cascading Failures**: Circuit breaker pattern to prevent system overload
+
+### Error Reporting
+
+All errors should include:
+- Error code and category
+- Detailed message with context
+- Suggested remediation steps
+- Relevant axiom references
+- Timestamp and affected components
+
+## Testing Strategy
+
+### Dual Testing Approach
+
+The ADE Compliance Framework requires both unit tests and property-based tests for comprehensive coverage:
+
+**Unit Tests**: Focus on specific examples, edge cases, and integration points
+- Specific compliance check scenarios (e.g., missing requirements.md)
+- Error handling paths
+- Configuration parsing
+- Git hook integration
+- CLI command execution
+- Edge cases: empty files, malformed JSON, circular traceability
+
+**Property-Based Tests**: Verify universal properties across all inputs
+- Minimum 100 iterations per property test
+- Each test references its design document property
+- Tag format: **Feature: ade-compliance-framework, Property {number}: {property_text}**
+
+### Property-Based Testing Library
+
+**Python**: Use Hypothesis for property-based testing
+- Generates random test data (file structures, code samples, configurations)
+- Shrinks failing examples to minimal reproducible cases
+- Integrates with pytest
+
+### Test Coverage Requirements
+
+- Minimum 80% code coverage (configurable)
+- 100% coverage of compliance validators
+- 100% coverage of escalation protocol
+- 100% coverage of audit trail operations
+
+### Testing Phases
+
+1. **Unit Testing**: Test individual validators and components
+2. **Integration Testing**: Test Git hooks, CLI, and API
+3. **Property Testing**: Verify universal correctness properties
+4. **Performance Testing**: Verify 10-second threshold compliance
+5. **End-to-End Testing**: Test complete workflows (commit → check → block/allow)
+
+### Test Data Generation
+
+For property-based tests, generate:
+- Random file structures (with/without specs, tests, traceability)
+- Random code samples (Python, TypeScript, JavaScript, Java)
+- Random Git diffs (architectural vs. non-architectural changes)
+- Random compliance configurations
+- Random decision scenarios (various criticality levels)
+
+### Continuous Testing
+
+- Run unit tests on every commit
+- Run property tests on every push
+- Run full test suite on pull requests
+- Monitor test execution time (should stay under 10 seconds)
+
+## Implementation Notes
+
+### Language Selection
+
+The framework core will be implemented in **Python** for the following reasons:
+- Excellent ecosystem for CLI tools (Click, Typer)
+- Strong Git integration libraries (GitPython)
+- Tree-sitter bindings for multi-language parsing
+- Hypothesis for property-based testing
+- SQLite support for audit trail
+- Easy distribution via pip
+
+### Multi-Language Support
+
+Use Tree-sitter for parsing multiple languages:
+- Python: tree-sitter-python
+- TypeScript: tree-sitter-typescript
+- JavaScript: tree-sitter-javascript
+- Java: tree-sitter-java
+
+Tree-sitter provides consistent AST parsing across languages, enabling language-agnostic traceability extraction.
+
+### Performance Optimization
+
+To meet the 10-second threshold:
+- **Incremental Checking**: Only check changed files
+- **Caching**: Cache parse results and traceability matrices
+- **Parallel Execution**: Run independent checks in parallel
+- **Early Exit**: Stop on first critical violation (configurable)
+- **Lazy Loading**: Load language parsers on demand
+
+### Deployment
+
+- **Package**: Distribute as Python package via pip
+- **Installation**: `pip install ade-compliance-framework`
+- **Git Hooks**: Auto-install hooks via `ade-compliance install-hooks`
+- **Configuration**: `.ade-compliance.yml` in repository root
+- **Updates**: Support automatic updates via pip
+
+### Extensibility
+
+- **Custom Rules**: Plugin system for custom compliance rules
+- **Custom Axioms**: Support for project-specific axioms
+- **Custom Parsers**: Support for additional languages via Tree-sitter
+- **Custom Reports**: Template system for custom report formats
+
+### Security Considerations
+
+- **Audit Trail Integrity**: Use cryptographic hashing to ensure tamper-evidence
+- **Access Control**: Restrict override capabilities to Human Architect role
+- **Secrets**: Never log sensitive data (API keys, passwords) in audit trail
+- **Validation**: Sanitize all inputs to prevent injection attacks
+
+### Migration Path
+
+For existing projects:
+1. Install framework: `pip install ade-compliance-framework`
+2. Initialize configuration: `ade-compliance init`
+3. Run initial audit: `ade-compliance audit --report`
+4. Address violations incrementally
+5. Enable enforcement: `ade-compliance install-hooks`
+6. Monitor dashboard for compliance trends
+
+### Human Architect Interface
+
+The Human Architect interacts with the system through:
+- **CLI**: For manual reviews and overrides
+- **Dashboard**: For monitoring compliance metrics
+- **Escalation Queue**: For reviewing critical decisions
+- **Override Interface**: For approving exceptions with rationale
+- **Configuration**: For adjusting thresholds and rules
+
+The system ensures the Human Architect maintains supreme authority while minimizing review burden (< 5% of decisions).
