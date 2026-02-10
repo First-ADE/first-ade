@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
 from pydantic import BaseModel, Field
+
 from .axiom import Violation
+
 
 class ComplianceReport(BaseModel):
     version: str = "1.0.0"
@@ -9,7 +12,7 @@ class ComplianceReport(BaseModel):
     repo_root: str
     violations: List[Violation] = []
     summary: Dict[str, int] = {}
-    
+
     def generate_summary(self):
         self.summary = {
             "total": len(self.violations),

@@ -1,7 +1,10 @@
-import pytest
 import uuid
-from ade_compliance.services.audit import AuditService
+
+import pytest
+
 from ade_compliance.config import Config, GlobalSettings
+from ade_compliance.services.audit import AuditService
+
 
 @pytest.fixture
 def audit_service(tmp_path):
@@ -12,10 +15,12 @@ def audit_service(tmp_path):
     # Force clean state
     with service.engine.connect() as conn:
         from sqlalchemy import text
+
         conn.execute(text("DELETE FROM audit_log"))
         conn.commit()
     yield service
     service.engine.dispose()
+
 
 def test_audit_logging(audit_service):
     audit_service.log("TEST_ACTION", {"user": "agent"})
@@ -24,12 +29,13 @@ def test_audit_logging(audit_service):
     assert entries[0]["action"] == "TEST_ACTION"
     assert entries[0]["details"]["user"] == "agent"
 
+
 def test_hash_chain_integrity(audit_service):
     audit_service.log("ACTION_1", {})
     audit_service.log("ACTION_2", {})
-    
+
     # We can't verify hash internally easily without exposing model, but we verify we can read back 2 entries
     entries = audit_service.get_entries(limit=2)
     assert len(entries) == 2
-    assert entries[0]["action"] == "ACTION_2" # Descending order
+    assert entries[0]["action"] == "ACTION_2"  # Descending order
     assert entries[1]["action"] == "ACTION_1"
