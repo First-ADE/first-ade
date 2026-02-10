@@ -138,17 +138,17 @@
 
 ### Tests for US-8
 
-- [ ] T059 [P] [US8] Unit tests for attestation service (record, confidence threshold, escalation trigger) in tests/unit/services/test_attestation.py
-- [ ] T060 [P] [US8] Integration test for HTTP API endpoints in tests/integration/test_server.py
+- [x] T059 [P] [US8] Unit tests for attestation service (record, confidence threshold, escalation trigger) in tests/unit/services/test_attestation.py
+- [x] T060 [P] [US8] Integration test for HTTP API endpoints in tests/integration/test_server.py
 
 ### Implementation for US-8
 
-- [ ] T061 [US8] Implement attestation service (record attestation, confidence < 0.7 → escalate) in src/ade_compliance/services/attestation.py
-- [ ] T062 [US8] Implement FastAPI server with health, check, attest endpoints in src/ade_compliance/server.py
-- [ ] T063 [US8] Implement reports and overrides endpoints in src/ade_compliance/server.py
-- [ ] T064 [US8] Implement Prometheus-compatible /metrics endpoint (FR-026) in src/ade_compliance/observability/metrics.py
-- [ ] T065 [US8] Add `serve` command to CLI in src/ade_compliance/cli.py
-- [ ] T066 [US8] Bind server to 127.0.0.1 only with uvicorn single-worker in src/ade_compliance/server.py
+- [x] T061 [US8] Implement attestation service (record attestation, confidence < 0.7 → escalate) in src/ade_compliance/services/attestation.py
+- [x] T062 [US8] Implement FastAPI server with health, check, attest endpoints in src/ade_compliance/server.py
+- [x] T063 [US8] Implement reports and overrides endpoints in src/ade_compliance/server.py
+- [x] T064 [US8] Implement Prometheus-compatible /metrics endpoint (FR-026) in src/ade_compliance/observability/metrics.py
+- [x] T065 [US8] Add `serve` command to CLI in src/ade_compliance/cli.py
+- [x] T066 [US8] Bind server to 127.0.0.1 only with uvicorn single-worker in src/ade_compliance/server.py
 
 **Checkpoint**: Agent HTTP API functional for self-check, attestation, and observability
 
