@@ -82,6 +82,29 @@ class CreateOverrideRequest(BaseModel):
     permanent_justification: str = ""
 
 
+class PreflightRequest(BaseModel):
+    """Request body for POST /api/v1/compliance/preflight."""
+
+    files: List[str] = []
+
+
+class PreflightResponse(BaseModel):
+    """Response body for POST /api/v1/compliance/preflight."""
+
+    global_strictness: str
+    enforce_coverage: bool
+    min_coverage_threshold: int
+    traceability_required: bool
+    governing_axioms: List[dict]
+    file_constraints: dict
+
+
+class PromptDecorateResponse(BaseModel):
+    """Response body for GET /api/v1/prompts/decorate."""
+
+    markdown: str
+
+
 # --- Dependencies ---
 
 
@@ -287,6 +310,74 @@ def metrics():
     """Prometheus-compatible metrics endpoint (FR-026)."""
     output, content_type = get_metrics_output()
     return Response(content=output, media_type=content_type)
+
+
+@router.post("/api/v1/compliance/preflight", response_model=PreflightResponse)
+def preflight(
+    request: PreflightRequest,
+    attestation_service: AttestationService = Depends(get_attestation_service),
+):
+    """Provide a pre-flight compliance check overview for planned target files."""
+    config = attestation_service.config
+
+    # Log event to audit service
+    attestation_service.audit.log(
+        "PRE_FLIGHT_REQUEST",
+        {"files_count": len(request.files), "files": request.files},
+    )
+
+    from ade_compliance.config import get_axiom_strictness
+
+    # Compile governing axioms based on current config
+    governing_axioms = [
+        {
+            "id": "Π.2.1",
+            "description": "Core business logic MUST maintain >=80% line coverage.",
+            "strictness": get_axiom_strictness(config, "Π.2.1"),
+        },
+        {
+            "id": "Π.3.1",
+            "description": "Complete bidirectional traceability annotations required.",
+            "strictness": get_axiom_strictness(config, "Π.3.1"),
+        },
+    ]
+
+    # Compile specific file constraints
+    file_constraints = {}
+    for f in request.files:
+        is_core = (
+            any(part in f.lower() for part in ["models", "engines", "services", "config", "db"])
+            and "tests" not in f.lower()
+        )
+        strictness = "enforce" if is_core else config.global_settings.strictness
+        file_constraints[f] = {
+            "is_core": is_core,
+            "strictness": strictness,
+            "required_annotations": ["implements", "traces_to"] if config.engines.trace.enabled else [],
+        }
+
+    return PreflightResponse(
+        global_strictness=config.global_settings.strictness,
+        enforce_coverage=config.engines.test.enabled,
+        min_coverage_threshold=config.engines.test.min_coverage or 80,
+        traceability_required=config.engines.trace.enabled,
+        governing_axioms=governing_axioms,
+        file_constraints=file_constraints,
+    )
+
+
+@router.get("/api/v1/prompts/decorate", response_model=PromptDecorateResponse)
+def prompt_decorate(
+    files: Optional[List[str]] = Query(default=None),
+    attestation_service: AttestationService = Depends(get_attestation_service),
+):
+    """Retrieve highly structured Markdown prompt block enforcing active constraints."""
+    from ade_compliance.utils.prompts import generate_prompt_decorator
+
+    config = attestation_service.config
+    markdown = generate_prompt_decorator(config, files)
+
+    return PromptDecorateResponse(markdown=markdown)
 
 
 # --- App Factory ---
