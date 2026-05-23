@@ -275,6 +275,20 @@ def verify_audit_trail(config: str):
         sys.exit(2)
 
 
+@main.command(name="prompt-decorate")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def prompt_decorate(paths: List[str], config: str):
+    """Retrieve highly structured Markdown prompt block enforcing active constraints."""
+    cfg = load_config(Path(config))
+    from ade_compliance.utils.prompts import generate_prompt_decorator
+
+    files_list = list(paths) if paths else None
+    markdown = generate_prompt_decorator(cfg, files_list)
+    click.echo(markdown)
+    sys.exit(0)
+
+
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
 @click.option("--port", default=8080, type=int, help="Port to bind to (default: 8080)")
