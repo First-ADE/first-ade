@@ -202,6 +202,38 @@ class TestOverridesEndpoint:
         )
         assert resp_no_just.status_code == 422
 
+        # Permanent with invalid unprefixed justification
+        resp_invalid_just = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+                "is_permanent": True,
+                "permanent_justification": "This has no valid prefix.",
+            },
+            headers={"X-SSO-User": "architect-1"},
+        )
+        assert resp_invalid_just.status_code == 422
+
+        # Permanent with valid SSO-PR- prefixed justification
+        resp_valid_just = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+                "is_permanent": True,
+                "permanent_justification": "SSO-PR-123456-valid-justification",
+            },
+            headers={"X-SSO-User": "architect-1"},
+        )
+        assert resp_valid_just.status_code == 200
+
 
 class TestTrendEndpoint:
     """T063: Trend reporting endpoint tests."""
