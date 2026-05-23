@@ -1,3 +1,6 @@
+# implements: FR-017
+# traces_to: Π.3.1
+
 """Centralized Asynchronous Execution Utilities for ADE Compliance.
 
 Provides safe mechanisms to execute asynchronous coroutines from synchronous contexts

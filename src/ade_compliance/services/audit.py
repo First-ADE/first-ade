@@ -1,3 +1,6 @@
+# implements: FR-007
+# traces_to: Π.3.1
+
 """T041: Tamper-proof append-only audit trail logic for compliance events.
 
 Logs framework runs, violations, and override registrations with SHA-256 validation.

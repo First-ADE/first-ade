@@ -157,7 +157,7 @@ def attest(
     )
 
     # Update metrics
-    attestation_total.labels(status=result.status).inc()
+    attestation_total.labels(status=result.status.value).inc()
     attestation_confidence.observe(result.confidence)
     if result.status == "escalated":
         escalation_total.inc()

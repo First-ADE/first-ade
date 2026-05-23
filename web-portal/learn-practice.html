@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First ADE - Level 3: Practice</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .page-header {
+            padding: calc(var(--spacing-2xl) + 2rem) 0 var(--spacing-xl);
+            background: linear-gradient(180deg, rgba(236, 72, 153, 0.1) 0%, rgba(15, 23, 42, 0) 100%);
+            position: relative;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            transition: color var(--transition-fast);
+        }
+        .back-btn:hover {
+            color: var(--primary);
+        }
+        .practice-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+        }
+        .code-container {
+            background: #0b0f19;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            overflow-x: auto;
+            position: relative;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: var(--spacing-xs);
+        }
+        .code-block {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            white-space: pre;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="logo-symbol">Σ</span>
+                <span class="logo-text">First ADE</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="learn-foundations.html" class="nav-link">Foundations</a>
+                <a href="learn-methodology.html" class="nav-link">Methodology</a>
+                <a href="learn-practice.html" class="nav-link active">Practice</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <a href="index.html" class="back-btn">← Back to Dashboard</a>
+            <span class="section-badge">Level 3: Practice</span>
+            <h1 class="gradient-text">Practical Integration</h1>
+            <p class="lead">Bootstrap Axiom-Driven Engineering in your own repository. Write specifications, author ADRs, configure compliance gates, and align CI/CD guards.</p>
+        </div>
+    </div>
+
+    <!-- Practice Guidelines -->
+    <section class="container" style="padding-bottom: var(--spacing-2xl);">
+        
+        <!-- Step 1: SDD -->
+        <div class="practice-card">
+            <span class="section-badge">Step 1</span>
+            <h2>Writing Specifications (specs.md)</h2>
+            <p>Every feature starts with an explicit, high-fidelity specification in `specs/` defining user scenarios (Given/When/Then), functional requirements, and success criteria. AI agents will read this file to construct the application and verification suites.</p>
+            
+            <div class="code-container">
+                <div class="code-header">
+                    <span>specs/feature-x/spec.md</span>
+                    <span>markdown</span>
+                </div>
+                <pre class="code-block"># Feature Specification: User Authentication
+
+**Status**: Draft | **Postulate**: Π.1.1
+
+## User Scenarios
+### US-1 — Local Signup
+**Given** the user is on the signup form,
+**When** the user submits a valid email and strong password,
+**Then** the server should create a user account and return a verification email.
+
+## Functional Requirements
+* **FR-001**: Encrypt passwords using bcrypt with a work factor >= 12.
+* **FR-002**: Send verification link with short-lived token (15-min expiration).</pre>
+            </div>
+        </div>
+
+        <!-- Step 2: ADR -->
+        <div class="practice-card">
+            <span class="section-badge">Step 2</span>
+            <h2>Creating Architecture Decision Records (ADRs)</h2>
+            <p>Significant architectural choices (e.g. database selections, third-party libraries, interface designs) must be documented in a standardized markdown ADR file under `docs/decisions/` and must reference governing postulates to satisfy Π.3.1.</p>
+            
+            <div class="code-container">
+                <div class="code-header">
+                    <span>docs/decisions/0002-use-sqlite-for-audit-trail.md</span>
+                    <span>markdown</span>
+                </div>
+                <pre class="code-block"># ADR 0002: Use SQLite for Local Audit Trail
+
+## Status
+Approved
+
+## Context
+We require an append-only audit trail logging all compliance decisions locally.
+
+## Decision
+We will use a local SQLite database for decision persistence.
+
+## Consequences
+Traces to postulate Π.3.1. Simple deployment, immutable file access controls, and zero network lag.</pre>
+            </div>
+        </div>
+
+        <!-- Step 3: YAML Configuration -->
+        <div class="practice-card">
+            <span class="section-badge">Step 3</span>
+            <h2>Configuring .ade-compliance.yml</h2>
+            <p>Define the strictness settings for each compliance engine. Adoption can be phased incrementally by configuring strictness levels: `audit` (only write events), `warn` (log warning, continue), or `enforce` (raise exit code 1 to block CI/CD).</p>
+            
+            <div class="code-container">
+                <div class="code-header">
+                    <span>.ade-compliance.yml</span>
+                    <span>yaml</span>
+                </div>
+                <pre class="code-block">global:
+  strictness: warn
+  enabled: true
+  audit_path: ".ade_compliance/audit.sqlite"
+
+engines:
+  spec:
+    enabled: true
+    strictness: enforce
+    
+  test:
+    enabled: true
+    strictness: enforce
+    min_coverage: 80
+    
+  traceability:
+    enabled: true
+    strictness: warn
+    languages:
+      - python
+      - typescript</pre>
+            </div>
+        </div>
+
+        <!-- Step 4: GitHub Actions Gate -->
+        <div class="practice-card">
+            <span class="section-badge">Step 4</span>
+            <h2>Integrating GitHub Actions Gates</h2>
+            <p>Enforce compliance automated gates before any pull request is merged into your production branch. If the code contains any specification drift, missing unit tests, or traceability link violations, the commit will block automatically.</p>
+            
+            <div class="code-container">
+                <div class="code-header">
+                    <span>.github/workflows/ade-gate.yml</span>
+                    <span>yaml</span>
+                </div>
+                <pre class="code-block">name: ADE Compliance Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  compliance-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-style: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run compliance auditor
+        run: |
+          ade-compliance check-all src/</pre>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 First ADE. Open source under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
