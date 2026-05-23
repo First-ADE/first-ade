@@ -66,7 +66,7 @@ class TraceEngine(BaseEngine):
 
     def extract_links(self, file_path: str, content: str) -> List[TraceLink]:
         # Compute hash
-        content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
+        content_hash = hashlib.md5(content.encode("utf-8"), usedforsecurity=False).hexdigest()
 
         # Check cache
         if file_path in self._cache:

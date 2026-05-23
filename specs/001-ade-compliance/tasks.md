@@ -98,7 +98,7 @@
 ### Implementation for US-3
 
 - [x] T029 [US3] Implement test engine: detect test file existence, check test determinism (no external I/O, no sleep) in src/ade_compliance/engines/test_engine.py
-- [x] T030 [US3] Add configurable coverage threshold enforcement (default 80%, strictness: enforce) in src/ade_compliance/engines/test_engine.py
+- [x] T030 [US3] Add configurable coverage threshold enforcement (default 80%, strictness: enforce, blocking non-compliant commits) in src/ade_compliance/engines/test_engine.py
 
 **Checkpoint**: Test-first validation independently functional
 
@@ -256,7 +256,8 @@
 
 **Purpose**: Improvements affecting multiple user stories
 
-- [ ] T070 [P] Add override expiration auto-revert with 7-day pre-notification in src/ade_compliance/services/override.py
+- [ ] T070 [P] Add override expiration auto-revert (implementing 90-day default expiration with a 7-day pre-notification) in src/ade_compliance/services/override.py
+- [ ] T070a [P] Unit and integration tests to verify T070 override expiration auto-revert and 7-day pre-notification in tests/unit/services/test_override.py
 - [ ] T071 [P] Add strictness level support (audit/warn/enforce per axiom) across all engines in src/ade_compliance/config.py
 - [ ] T072 [P] Documentation: update README.md with quickstart, architecture overview
 - [ ] T073 [P] Add structured logging across all services in src/ade_compliance/observability/metrics.py
@@ -265,6 +266,7 @@
 - [ ] T076 Run `pyadr check-adr-repo` to validate all ADRs in docs/decisions/
 - [ ] T077 Run quickstart.md validation end-to-end
 - [ ] T078 [P] Implement deployment gate: block deployments with unresolved critical/high violations (FR-023) in src/ade_compliance/services/orchestrator.py
+- [ ] T078a [P] Unit and integration tests to verify T078 deployment gate enforcement in tests/unit/services/test_orchestrator.py
 - [ ] T079 [P] Create AI context files per Constitution VI: copilot-instructions.md, .gemini.md, .claude.md
 - [ ] T080 [P] Configure detect-secrets baseline per Constitution quality gates in .pre-commit-config.yaml
 
