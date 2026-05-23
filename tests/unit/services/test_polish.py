@@ -1,11 +1,7 @@
-import pytest
-from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from ade_compliance.config import Config, EngineConfig
-from ade_compliance.config import get_axiom_strictness
-from ade_compliance.services.override import OverrideService, Base
-from ade_compliance.models.axiom import ViolationState
+from ade_compliance.config import Config, get_axiom_strictness
+from ade_compliance.services.override import OverrideService
 
 
 def test_get_axiom_strictness_cascading():

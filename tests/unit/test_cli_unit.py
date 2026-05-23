@@ -1,10 +1,10 @@
+
 import pytest
 from click.testing import CliRunner
-from unittest.mock import MagicMock, patch
 
-from ade_compliance.cli import main, determine_exit_code
-from ade_compliance.models.axiom import Violation, ViolationState
+from ade_compliance.cli import determine_exit_code, main
 from ade_compliance.config import Config
+from ade_compliance.models.axiom import Violation
 
 
 def test_cli_subcommands_registered():
