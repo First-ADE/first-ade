@@ -27,7 +27,7 @@ Agentic-first compliance enforcement framework for Axiom Driven Engineering. Imp
 | --- | -------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | I   | Axiom Acceptance           | ✅ PASS | Spec maps all FRs to axiom references (Π.1.1, Π.2.1, Π.3.1, etc.)                                                                                                                      |
 | II  | Specification Governance   | ✅ PASS | spec.md complete; plan.md (this file); tasks.md follows                                                                                                                                |
-| III | Deterministic Verification | ✅ PASS | FR-015 mandates test determinism; pytest with seeded RNG; no external I/O in unit tests                                                                                                |
+| III | Deterministic Verification | ✅ PASS | FR-015 mandates test determinism. Enforced programmatically via static checks for forbidden call APIs (e.g., time.sleep), runtime randomization (pytest-randomly), and network/external resource mocks |
 | IV  | Traceable Decision Records | ✅ PASS | ADRs managed exclusively via `pyadr` CLI (MADR format); required for Tree-sitter selection, HTTP→MCP migration, fail-closed policy, strictness levels, SQLite choice (see research.md) |
 | V   | Architectural Constraints  | ✅ PASS | Single-direction dependency flow: CLI → Services → Engines → Models; no circular deps                                                                                                  |
 | VI  | AI Collaboration           | ✅ PASS | Agent context files maintained; FR-013/014 enforce agent self-check + attestation                                                                                                      |
@@ -104,13 +104,13 @@ src/
 │   ├── engines/
 │   │   ├── __init__.py
 │   │   ├── spec_engine.py     # Specification-first validation (FR-001, FR-004)
-│   │   ├── test_engine.py     # Test-first validation (FR-002, FR-015, FR-016)
+│   │   ├── test_engine.py     # Test-first validation (FR-002, FR-015, FR-016). Validates test determinism programmatically via static analysis (detecting forbidden APIs like time.sleep), runtime randomization (pytest-randomly), and automatic network call mocking.
 │   │   ├── trace_engine.py    # Traceability validation (FR-003, FR-020)
 │   │   ├── adr_engine.py      # ADR detection (FR-005)
 │   │   └── base.py            # Abstract engine interface
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── orchestrator.py    # Check orchestration + per-file serialization (FR-030)
+│   │   ├── orchestrator.py    # Check orchestration + per-file serialization (FR-030) using standard file-system locks (standard file locking) on target file paths.
 │   │   ├── escalation.py      # GitHub integration + local queue (FR-008, FR-009, FR-028)
 │   │   ├── audit.py           # Immutable audit trail (FR-007)
 │   │   ├── override.py        # Override lifecycle (FR-021)

@@ -1,5 +1,5 @@
 # ADE Compliance Configuration
-# This file defaults to strictness: warn for incremental adoption.
+# This file defaults to strictness: enforce for core business logic compliance.
 
 global:
   strictness: enforce
