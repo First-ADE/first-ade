@@ -138,17 +138,17 @@
 
 ### Tests for US-8
 
-- [ ] T059 [P] [US8] Unit tests for attestation service (record, confidence threshold, escalation trigger) in tests/unit/services/test_attestation.py
-- [ ] T060 [P] [US8] Integration test for HTTP API endpoints in tests/integration/test_server.py
+- [x] T059 [P] [US8] Unit tests for attestation service (record, confidence threshold, escalation trigger) in tests/unit/services/test_attestation.py
+- [x] T060 [P] [US8] Integration test for HTTP API endpoints in tests/integration/test_server.py
 
 ### Implementation for US-8
 
-- [ ] T061 [US8] Implement attestation service (record attestation, confidence < 0.7 → escalate) in src/ade_compliance/services/attestation.py
-- [ ] T062 [US8] Implement FastAPI server with health, check, attest endpoints in src/ade_compliance/server.py
-- [ ] T063 [US8] Implement reports and overrides endpoints in src/ade_compliance/server.py
-- [ ] T064 [US8] Implement Prometheus-compatible /metrics endpoint (FR-026) in src/ade_compliance/observability/metrics.py
-- [ ] T065 [US8] Add `serve` command to CLI in src/ade_compliance/cli.py
-- [ ] T066 [US8] Bind server to 127.0.0.1 only with uvicorn single-worker in src/ade_compliance/server.py
+- [x] T061 [US8] Implement attestation service (record attestation, confidence < 0.7 → escalate) in src/ade_compliance/services/attestation.py
+- [x] T062 [US8] Implement FastAPI server with health, check, attest endpoints in src/ade_compliance/server.py
+- [x] T063 [US8] Implement reports and overrides endpoints in src/ade_compliance/server.py
+- [x] T064 [US8] Implement Prometheus-compatible /metrics endpoint (FR-026) in src/ade_compliance/observability/metrics.py
+- [x] T065 [US8] Add `serve` command to CLI in src/ade_compliance/cli.py
+- [x] T066 [US8] Bind server to 127.0.0.1 only with uvicorn single-worker in src/ade_compliance/server.py
 
 **Checkpoint**: Agent HTTP API functional for self-check, attestation, and observability
 
@@ -162,14 +162,14 @@
 
 ### Tests for US-4
 
-- [ ] T037 [P] [US4] Unit tests for trace engine (markers present → pass, missing → fail, matrix generation) in tests/unit/engines/test_trace_engine.py
+- [x] T037 [P] [US4] Unit tests for trace engine (markers present → pass, missing → fail, matrix generation) in tests/unit/engines/test_trace_engine.py
 
 ### Implementation for US-4
 
-- [ ] T038 [US4] Implement Tree-sitter parser wrappers for Python, TypeScript, JavaScript, Java in src/ade_compliance/engines/trace_engine.py
-- [ ] T039 [US4] Implement traceability link extraction from AST (comments, decorators, docstrings) in src/ade_compliance/engines/trace_engine.py
-- [ ] T040 [US4] Implement traceability matrix generation (code→tests→requirements→axioms) in src/ade_compliance/engines/trace_engine.py
-- [ ] T041 [US4] Add AST cache by file hash for performance in src/ade_compliance/engines/trace_engine.py
+- [x] T038 [US4] Implement Tree-sitter parser wrappers for Python, TypeScript, JavaScript, Java in src/ade_compliance/engines/trace_engine.py
+- [x] T039 [US4] Implement traceability link extraction from AST (comments, decorators, docstrings) in src/ade_compliance/engines/trace_engine.py
+- [x] T040 [US4] Implement traceability matrix generation (code→tests→requirements→axioms) in src/ade_compliance/engines/trace_engine.py
+- [x] T041 [US4] Add AST cache by file hash for performance in src/ade_compliance/engines/trace_engine.py
 
 **Checkpoint**: Traceability validation works independently across 4 languages
 
@@ -183,15 +183,15 @@
 
 ### Tests for US-5
 
-- [ ] T042 [P] [US5] Unit tests for escalation service (criticality routing, 3-failure escalation, local queue retry) in tests/unit/services/test_escalation.py
+- [x] T042 [P] [US5] Unit tests for escalation service (criticality routing, 3-failure escalation, local queue retry) in tests/unit/services/test_escalation.py
 
 ### Implementation for US-5
 
-- [ ] T043 [US5] Implement escalation service: criticality classification (low/med auto-approve, high/critical → escalate) in src/ade_compliance/services/escalation.py
-- [ ] T044 [US5] Implement 3-failure escalation trigger (Π.5.3) with full context packaging in src/ade_compliance/services/escalation.py
-- [ ] T045 [US5] Implement GitHub integration (create issues, PR comments) in src/ade_compliance/services/escalation.py
-- [ ] T046 [US5] Implement local queue with exponential backoff (5 retries / 15 min) for GitHub failures in src/ade_compliance/services/escalation.py
-- [ ] T047 [US5] Implement Human Architect review rate tracking (<5% threshold, FR-022) in src/ade_compliance/services/escalation.py
+- [x] T043 [US5] Implement escalation service: criticality classification (low/med auto-approve, high/critical → escalate) in src/ade_compliance/services/escalation.py
+- [x] T044 [US5] Implement 3-failure escalation trigger (Π.5.3) with full context packaging in src/ade_compliance/services/escalation.py
+- [x] T045 [US5] Implement GitHub integration (create issues, PR comments) in src/ade_compliance/services/escalation.py
+- [x] T046 [US5] Implement local queue with exponential backoff (5 retries / 15 min) for GitHub failures in src/ade_compliance/services/escalation.py
+- [x] T047 [US5] Implement Human Architect review rate tracking (<5% threshold, FR-022) in src/ade_compliance/services/escalation.py
 
 **Checkpoint**: Escalation service routes decisions correctly with GitHub resilience
 
@@ -234,7 +234,7 @@
 ### Implementation for US-7
 
 - [ ] T055 [US7] Implement `check-all` CLI command dispatching to orchestrator in src/ade_compliance/cli.py
-- [ ] T056 [US7] Implement `check-traceability` CLI command invoking trace engine in src/ade_compliance/cli.py
+- [x] T056 [US7] Implement `check-traceability` CLI command invoking trace engine in src/ade_compliance/cli.py
 - [ ] T057 [US7] Implement `generate-report` CLI command producing JSON compliance report in src/ade_compliance/cli.py
 - [ ] T058 [US7] Add CLI exit code semantics (0=pass, 1=violations, 2=internal error) in src/ade_compliance/cli.py
 
@@ -246,9 +246,9 @@
 
 **Purpose**: FR-005 — cross-cutting concern used by orchestrator
 
-- [ ] T067 [P] Unit tests for ADR engine in tests/unit/engines/test_adr_engine.py
-- [ ] T068 Implement ADR engine: detect architectural changes, verify ADR exists via `pyadr check-adr-repo` in src/ade_compliance/engines/adr_engine.py
-- [ ] T069 Register ADR engine in orchestrator dispatch in src/ade_compliance/services/orchestrator.py
+- [x] T067 [P] Unit tests for ADR engine in tests/unit/engines/test_adr_engine.py
+- [x] T068 Implement ADR engine: detect architectural changes, verify ADR exists via `pyadr check-adr-repo` in src/ade_compliance/engines/adr_engine.py
+- [x] T069 Register ADR engine in orchestrator dispatch in src/ade_compliance/services/orchestrator.py
 
 ---
 

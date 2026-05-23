@@ -1,0 +1,26 @@
+name: Continuous Integration & Verification
+
+on:
+  push:
+    branches:
+      - main
+      - 001-ade-compliance
+  pull_request:
+    branches:
+      - main
+      - 001-ade-compliance
+
+permissions:
+  contents: read
+
+jobs:
+  python-ci:
+    name: Python Library Tests & Linting
+    uses: ./.github/workflows/ci-python-library.yml
+    with:
+      python-version: '3.11'
+      coverage-threshold: 80
+
+  compliance-and-security:
+    name: Compliance & Security Verification
+    uses: ./.github/workflows/compliance-and-security.yml

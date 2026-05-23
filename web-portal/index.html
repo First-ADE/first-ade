@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First ADE - Axiom Driven Engineering</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="logo-symbol">Σ</span>
+                <span class="logo-text">First ADE</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#learn" class="nav-link">Learn</a>
+                <a href="#axioms" class="nav-link">Axioms</a>
+                <a href="#methodology" class="nav-link">Methodology</a>
+                <a href="#tools" class="nav-link">Tools</a>
+                <a href="#community" class="nav-link">Community</a>
+            </div>
+            <button class="nav-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="grid-overlay"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">Building Software from First Principles</div>
+            <h1 class="hero-title">
+                Axiom Driven<br>
+                <span class="gradient-text">Engineering</span>
+            </h1>
+            <p class="hero-subtitle">
+                A rigorous methodology for software development where every decision traces back to fundamental truths. 
+                Build systems that are correct by design, not by accident.
+            </p>
+            <div class="hero-cta">
+                <a href="#learn" class="btn btn-primary">Start Learning</a>
+                <a href="#axioms" class="btn btn-secondary">Explore Axioms</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Core Axioms</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">7</div>
+                    <div class="stat-label">Methodology Phases</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Possibilities</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Statement -->
+    <section class="problem-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">The Challenge</span>
+                <h2>The Problem with Modern Development</h2>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">🎲</div>
+                    <h3>Convention-Driven Chaos</h3>
+                    <p>We copy patterns without understanding their origins. We adopt frameworks because they're popular, not because they solve our problems.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🌀</div>
+                    <h3>Accidental Complexity</h3>
+                    <p>Technical debt born from unjustified decisions. Systems that work, but nobody knows why they work.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🤖</div>
+                    <h3>AI Without Guardrails</h3>
+                    <p>"Vibe coding" produces hallucinated APIs and architectural drift. Speed without direction leads nowhere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Overview -->
+    <section class="solution-section">
+        <div class="container">
+            <div class="solution-content">
+                <div class="solution-text">
+                    <span class="section-badge">The Solution</span>
+                    <h2>Return to First Principles</h2>
+                    <p class="lead">ADE proposes a radical return to rigorous engineering. Every architectural decision, every code pattern, every tooling choice must trace back to a verifiable axiom—a fundamental truth we hold as self-evident.</p>
+                    <ul class="benefit-list">
+                        <li>
+                            <span class="benefit-icon">✓</span>
+                            <div>
+                                <strong>Eliminates Cargo-Culting</strong>
+                                <p>If you can't trace a decision to an axiom, you shouldn't make it</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="benefit-icon">✓</span>
+                            <div>
+                                <strong>Enables AI Collaboration</strong>
+                                <p>Agents can reason about decisions when the rationale is explicit</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="benefit-icon">✓</span>
+                            <div>
+                                <strong>Reduces Technical Debt</strong>
+                                <p>Decisions grounded in principles age better than those grounded in trends</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="solution-visual">
+                    <div class="hierarchy-diagram">
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node axiom">Axioms (Σ)</div>
+                            <div class="hierarchy-label">Self-evident truths</div>
+                        </div>
+                        <div class="hierarchy-arrow">↓</div>
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node postulate">Postulates (Π)</div>
+                            <div class="hierarchy-label">Logical derivations</div>
+                        </div>
+                        <div class="hierarchy-arrow">↓</div>
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node principle">Principles</div>
+                            <div class="hierarchy-label">Governance rules</div>
+                        </div>
+                        <div class="hierarchy-arrow">↓</div>
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node adr">ADRs</div>
+                            <div class="hierarchy-label">Traced decisions</div>
+                        </div>
+                        <div class="hierarchy-arrow">↓</div>
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node spec">Specifications</div>
+                            <div class="hierarchy-label">Executable contracts</div>
+                        </div>
+                        <div class="hierarchy-arrow">↓</div>
+                        <div class="hierarchy-level">
+                            <div class="hierarchy-node impl">Implementation</div>
+                            <div class="hierarchy-label">Axiom-aligned code</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Learning Path -->
+    <section id="learn" class="learning-path">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Your Journey</span>
+                <h2>Learn ADE Step by Step</h2>
+                <p>Master Axiom Driven Engineering through a structured learning path designed for all skill levels</p>
+            </div>
+            <div class="path-grid">
+                <div class="path-card" data-level="beginner">
+                    <div class="path-header">
+                        <span class="path-level">Level 1</span>
+                        <h3>Foundations</h3>
+                    </div>
+                    <p>Understand the core concepts and why ADE matters</p>
+                    <ul class="path-topics">
+                        <li>What is an Axiom?</li>
+                        <li>The Five Core Axioms</li>
+                        <li>Axiomatic vs. Convention-Driven</li>
+                        <li>The ADE Manifesto</li>
+                    </ul>
+                    <a href="learn-foundations.html" class="path-link">Start Learning →</a>
+                </div>
+                <div class="path-card" data-level="intermediate">
+                    <div class="path-header">
+                        <span class="path-level">Level 2</span>
+                        <h3>Methodology</h3>
+                    </div>
+                    <p>Learn the 7-phase workflow and how to apply it</p>
+                    <ul class="path-topics">
+                        <li>Specify → Clarify → Plan</li>
+                        <li>Tasks → Implement → Verify</li>
+                        <li>Analyze and Improve</li>
+                        <li>Spec-Driven Development</li>
+                    </ul>
+                    <a href="learn-methodology.html" class="path-link">Continue →</a>
+                </div>
+                <div class="path-card" data-level="advanced">
+                    <div class="path-header">
+                        <span class="path-level">Level 3</span>
+                        <h3>Practice</h3>
+                    </div>
+                    <p>Apply ADE to real projects with AI agents</p>
+                    <ul class="path-topics">
+                        <li>Writing Specifications</li>
+                        <li>ADR Documentation</li>
+                        <li>Agent Collaboration</li>
+                        <li>Constitutional Constraints</li>
+                    </ul>
+                    <a href="learn-practice.html" class="path-link">Master It →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Axioms Section -->
+    <section id="axioms" class="axioms-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">The Foundation</span>
+                <h2>The Five Axioms</h2>
+                <p>Self-evident engineering truths that govern all downstream decisions</p>
+            </div>
+            <div class="axioms-grid">
+                <!-- Axiom cards will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Methodology Section -->
+    <section id="methodology" class="methodology-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">The Process</span>
+                <h2>The ADE Methodology</h2>
+                <p>A structured 7-phase lifecycle that transforms axioms into working software</p>
+            </div>
+            <div class="methodology-timeline">
+                <!-- Timeline will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Tools Section -->
+    <section id="tools" class="tools-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">The Stack</span>
+                <h2>Agentic Development Tools</h2>
+                <p>Modern tools that augment the ADE workflow for the AI era</p>
+            </div>
+            <div class="tools-grid">
+                <!-- Tools will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Build from First Principles?</h2>
+                <p>Join the community of engineers building software that's correct by design</p>
+                <div class="cta-buttons">
+                    <a href="#learn" class="btn btn-primary btn-large">Start Learning</a>
+                    <a href="https://github.com" class="btn btn-secondary btn-large">View on GitHub</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-symbol">Σ</span>
+                        <span class="logo-text">First ADE</span>
+                    </div>
+                    <p>Building software from first principles</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Learn</h4>
+                        <a href="#axioms">Axioms</a>
+                        <a href="#methodology">Methodology</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="examples.html">Examples</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <a href="research.html">Research</a>
+                        <a href="tools.html">Tools</a>
+                        <a href="templates.html">Templates</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Community</h4>
+                        <a href="https://github.com">GitHub</a>
+                        <a href="https://discord.com">Discord</a>
+                        <a href="https://twitter.com">Twitter</a>
+                        <a href="contribute.html">Contribute</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 First ADE. Open source under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
