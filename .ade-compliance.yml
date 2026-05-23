@@ -2,23 +2,23 @@
 # This file defaults to strictness: warn for incremental adoption.
 
 global:
-  strictness: audit
+  strictness: enforce
   enabled: true
   audit_path: ".ade_compliance/audit.sqlite"
 
 engines:
   spec:
     enabled: true
-    strictness: audit
+    strictness: enforce
     
   test:
     enabled: true
-    strictness: audit
+    strictness: enforce
     min_coverage: 80
     
   traceability:
     enabled: true
-    strictness: audit
+    strictness: enforce
     languages:
       - python
       - typescript

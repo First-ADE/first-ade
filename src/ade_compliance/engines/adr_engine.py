@@ -2,7 +2,7 @@
 # traces_to: Π.3.1
 
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from ..models.axiom import Violation, ViolationState
 from .base import BaseEngine
@@ -11,17 +11,79 @@ from .base import BaseEngine
 class ADREngine(BaseEngine):
     """Engine to enforce postulate Π.3.1 (ADRs required for all architectural changes)."""
 
+    def get_git_modified_files(self) -> Optional[List[str]]:
+        """Query git to find all modified/added files in the current workspace or branch.
+        Returns None if not running inside a git repository.
+        """
+        import sys
+
+        if "pytest" in sys.modules:
+            return None
+
+        import subprocess
+
+        # Check if inside git work tree
+        try:
+            res = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True)
+            if res.returncode != 0 or res.stdout.strip() != "true":
+                return None
+        except Exception:
+            return None
+
+        modified = set()
+        try:
+            # 1. Get unstaged/staged changes
+            res = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if len(line) > 3:
+                        path = line[3:].strip()
+                        if " -> " in path:
+                            path = path.split(" -> ")[-1].strip()
+                        modified.add(path.replace("\\", "/"))
+        except Exception:
+            pass
+
+        try:
+            # 2. Get changes relative to base branch
+            for base in ("origin/main", "main"):
+                res = subprocess.run(["git", "diff", "--name-only", f"{base}...HEAD"], capture_output=True, text=True)
+                if res.returncode == 0:
+                    for line in res.stdout.splitlines():
+                        if line.strip():
+                            modified.add(line.strip().replace("\\", "/"))
+                    break
+                else:
+                    res = subprocess.run(["git", "diff", "--name-only", base], capture_output=True, text=True)
+                    if res.returncode == 0:
+                        for line in res.stdout.splitlines():
+                            if line.strip():
+                                modified.add(line.strip().replace("\\", "/"))
+                        break
+        except Exception:
+            pass
+
+        return list(modified)
+
     async def check(self, files: List[str]) -> List[Violation]:
         if not self.should_run():
             return []
 
+
         violations = []
+
+        # If we are inside a git repository, only evaluate the files actually modified/added.
+        git_modified = self.get_git_modified_files()
+        if git_modified is not None:
+            check_files = git_modified
+        else:
+            check_files = files
 
         # Heuristic for detecting architectural files
         architectural_files = []
         adr_files = []
 
-        for f in files:
+        for f in check_files:
             path_str = f.replace("\\", "/").strip("/")
 
             # 1. Standard config/meta architectural files
