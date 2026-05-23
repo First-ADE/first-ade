@@ -5,6 +5,7 @@ import pytest
 
 def test_version():
     """Verify package version is accessible."""
-    from {{project_name}} import __version__
+    import importlib
 
-    assert __version__ == "0.1.0"
+    module = importlib.import_module("{{project_name}}")
+    assert module.__version__ == "0.1.0"
