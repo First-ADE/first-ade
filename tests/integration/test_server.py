@@ -107,11 +107,43 @@ class TestOverridesEndpoint:
     """T063: Overrides endpoint tests."""
 
     def test_overrides_returns_list(self, client):
-        """GET /overrides should return a list of active overrides."""
-        response = client.get("/overrides")
+        """GET /overrides should return a list of active overrides when authenticated."""
+        response = client.get("/overrides", headers={"X-SSO-User": "architect-1"})
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
+    def test_overrides_unauthorized_if_missing_header(self, client):
+        """GET and POST /overrides should fail with 401 if SSO header is missing."""
+        response_get = client.get("/overrides")
+        assert response_get.status_code == 401
+
+        response_post = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+            },
+        )
+        assert response_post.status_code == 401
+
+    def test_create_override_forbidden_if_mismatched_user(self, client):
+        """POST /overrides should fail with 403 if SSO user does not match created_by."""
+        response = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+            },
+            headers={"X-SSO-User": "architect-different"},
+        )
+        assert response.status_code == 403
 
     def test_create_override_success(self, client):
         """POST /overrides with valid parameters should create the override successfully."""
@@ -124,6 +156,7 @@ class TestOverridesEndpoint:
                 "rationale": "This is a very long rationale of more than twenty characters.",
                 "created_by": "architect-1",
             },
+            headers={"X-SSO-User": "architect-1"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -132,7 +165,7 @@ class TestOverridesEndpoint:
         assert "id" in data
 
         # Verify it shows up in GET /overrides list
-        list_resp = client.get("/overrides")
+        list_resp = client.get("/overrides", headers={"X-SSO-User": "architect-1"})
         assert list_resp.status_code == 200
         list_data = list_resp.json()
         assert any(item["id"] == data["id"] for item in list_data)
@@ -149,6 +182,7 @@ class TestOverridesEndpoint:
                 "rationale": "Short",
                 "created_by": "architect-1",
             },
+            headers={"X-SSO-User": "architect-1"},
         )
         assert resp_short.status_code == 422
 
@@ -164,6 +198,7 @@ class TestOverridesEndpoint:
                 "is_permanent": True,
                 "permanent_justification": "",
             },
+            headers={"X-SSO-User": "architect-1"},
         )
         assert resp_no_just.status_code == 422
 
