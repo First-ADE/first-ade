@@ -181,6 +181,37 @@ def test_override_whitespace_justification_rejected():
         )
 
 
+def test_override_permanent_valid_justification():
+    """Permanent override with a valid SSO-PR- or SSO-SIG- prefix justification is accepted."""
+    o = Override(
+        axiom_id="Π.1.1",
+        scope_type="FILE",
+        scope_value="f.py",
+        rationale="A valid rationale for overriding this.",
+        created_by="user",
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1),
+        is_permanent=True,
+        permanent_justification="SSO-PR-12345-valid-substantive-justification",
+    )
+    assert o.is_permanent is True
+    assert o.permanent_justification == "SSO-PR-12345-valid-substantive-justification"
+
+
+def test_override_permanent_unprefixed_justification_rejected():
+    """Permanent override with an unprefixed justification should raise ValidationError."""
+    with pytest.raises(ValidationError, match="must start with either 'SSO-PR-' or 'SSO-SIG-'"):
+        Override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="f.py",
+            rationale="A valid rationale for overriding this.",
+            created_by="user",
+            expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1),
+            is_permanent=True,
+            permanent_justification="This is an unprefixed but otherwise fine justification",
+        )
+
+
 # ── Attestation ────────────────────────────────────────────────────────
 
 

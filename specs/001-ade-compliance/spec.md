@@ -17,7 +17,7 @@
 - Q: Observability signals? → A: Structured logs + Prometheus-style metrics (latency p50/p95/p99, violation counts by axiom/severity, escalation queue depth, cache hit rate).
 - Q: Fallback when GitHub is unreachable for escalations? → A: Queue locally, exponential backoff (max 5 retries / 15 min). If still failing, block agent and log locally.
 - Q: Incremental adoption model for legacy codebases? → A: Three strictness levels — audit (log only), warn (allow with acknowledgment), enforce (block). Per-axiom configurable.
-- Q: Override expiration/scope limits? → A: Mandatory scope (file/directory/component). Optional expiration (default 90 days). Permanent requires elevated justification. Expired overrides auto-revert.
+- Q: Override expiration/scope limits? → A: Mandatory scope (file/directory/component). Optional expiration (default 90 days). Permanent requires elevated justification (defined as a non-empty string starting with SSO peer-review ID 'SSO-PR-' or cryptographic signature 'SSO-SIG-'). Expired overrides auto-revert.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -146,7 +146,7 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **FR-018**: Common compliance interface via local HTTP API (roadmap: MCP with RAG) for Copilot, Gemini, Claude, Kiro
 - **FR-019**: Support Python, TypeScript, JavaScript, and Java for traceability extraction
 - **FR-020**: Generate traceability matrix: code → tests → requirements → axioms
-- **FR-021**: Human Architect override of violations with mandatory rationale
+- **FR-021**: Human Architect override of violations with mandatory rationale and mandatory scope (file/directory/component). Overrides have a default 90-day expiration with auto-revert. Permanent overrides require elevated justification (defined as a non-empty string starting with SSO peer-review ID 'SSO-PR-' or cryptographic signature 'SSO-SIG-').
 - **FR-022**: Track % of decisions requiring Human review; alert when >5%
 - **FR-023**: Block deployments with unresolved violations unless Human Architect overrides
 - **FR-024**: Compliance dashboard: metrics, violation trends, component health *(Deferred: separate feature spec; data layer in US-6 supports future dashboard)*
@@ -154,7 +154,6 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **FR-026**: Expose observability: latency percentiles (p50/p95/p99), violation counts by axiom/severity, escalation queue depth, cache hit rate
 - **FR-027**: Three configurable strictness levels per axiom: audit, warn, enforce
 - **FR-028**: Queue escalation notifications locally on delivery failure; retry with exponential backoff (5 retries / 15 min)
-- **FR-029**: Overrides require mandatory scope (file/directory/component); default 90-day expiration with auto-revert
 - **FR-030**: Serialize concurrent checks per-file to prevent audit trail race conditions
 
 ### Key Entities

@@ -159,9 +159,16 @@ class Override(BaseModel):
 
     @model_validator(mode="after")
     def validate_permanent(self) -> "Override":
-        """Ensure permanent overrides include a substantive justification."""
-        if self.is_permanent and not (self.permanent_justification or "").strip():
-            raise ValueError("permanent_justification is required when is_permanent is True")
+        """Ensure permanent overrides include a substantive elevated justification."""
+        if self.is_permanent:
+            justification = (self.permanent_justification or "").strip()
+            if not justification:
+                raise ValueError("permanent_justification is required when is_permanent is True")
+            if not (justification.startswith("SSO-PR-") or justification.startswith("SSO-SIG-")):
+                raise ValueError(
+                    "permanent_justification must start with either 'SSO-PR-' or 'SSO-SIG-' "
+                    "for elevated justification validation."
+                )
         return self
 
     @property

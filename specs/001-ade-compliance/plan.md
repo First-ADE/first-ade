@@ -113,7 +113,7 @@ src/
 │   │   ├── orchestrator.py    # Check orchestration + per-file serialization (FR-030)
 │   │   ├── escalation.py      # GitHub integration + local queue (FR-008, FR-009, FR-028)
 │   │   ├── audit.py           # Immutable audit trail (FR-007)
-│   │   ├── override.py        # Override lifecycle (FR-021, FR-029)
+│   │   ├── override.py        # Override lifecycle (FR-021)
 │   │   └── attestation.py     # Agent attestation service (FR-013, FR-014)
 │   ├── hooks/
 │   │   ├── __init__.py
