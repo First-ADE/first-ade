@@ -81,7 +81,8 @@ def normalize_project_path(file_path: str) -> str:
         except ValueError:
             # Not relative to current directory, fallback to standard normalization
             pass
-    except Exception:
+    except (OSError, RuntimeError, ValueError):
+        # Resolution can fail for invalid/unavailable paths; fallback normalization handles this case.
         pass
 
     # Standard fallback normalization
