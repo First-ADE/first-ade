@@ -1,5 +1,7 @@
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
+
 import pytest
+
 from ade_compliance.config import EngineConfig
 from ade_compliance.engines.trace_engine import TraceEngine
 

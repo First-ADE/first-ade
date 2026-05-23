@@ -5,9 +5,9 @@ from typing import List, Tuple
 
 import click
 
-from ade_compliance.config import load_config, Config, get_axiom_strictness
-from ade_compliance.services.orchestrator import Orchestrator
+from ade_compliance.config import Config, get_axiom_strictness, load_config
 from ade_compliance.models.report import ComplianceReport
+from ade_compliance.services.orchestrator import Orchestrator
 
 
 def determine_exit_code(violations: List, config: Config) -> int:

@@ -86,8 +86,8 @@ class AttestationService:
                 return asyncio.run(coro)
 
         # If escalated, log escalation event and trigger EscalationService
-        from ..services.escalation import EscalationService
         from ..models.decision import Decision
+        from ..services.escalation import EscalationService
         
         escalation_service = EscalationService(self.config)
 
