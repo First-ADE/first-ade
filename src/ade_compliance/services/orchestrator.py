@@ -63,14 +63,22 @@ class Orchestrator:
             base_dir = Path(".").resolve()
             for file_path in files:
                 try:
-                    file_path_str = str(file_path)
-                    # Reject traversal sequences and absolute paths to sanitize the input for CodeQL
-                    if ".." in file_path_str or file_path_str.startswith("/") or file_path_str.startswith("\\") or ":" in file_path_str:
+                    # Normalize backslashes to forward slashes for cross-platform matching
+                    file_path_str = str(file_path).replace("\\", "/")
+                    
+                    # Strictly validate path structure via regex whitelist and block traversal
+                    import re
+                    if not re.match(r"^[a-zA-Z0-9_\-/.]+$", file_path_str) or ".." in file_path_str:
                         continue
                     
+                    # Construct absolute resolved path
                     path = (base_dir / file_path_str).resolve()
-                    if not path.is_relative_to(base_dir):
+                    
+                    # Double-lock directory boundaries via standard commonpath validation
+                    import os
+                    if os.path.commonpath([str(base_dir), str(path)]) != str(base_dir):
                         continue
+                    
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
                         with open(path, "r", encoding="utf-8") as f:
                             content = f.read()
