@@ -1,0 +1,31 @@
+name: Commit Message Linter
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 001-ade-compliance
+
+permissions:
+  contents: read
+
+jobs:
+  lint-commits:
+    name: Lint Commit Messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: '3.11'
+
+      - name: Run Commit Message Verifier
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          python .github/scripts/verify_commits.py --base "$BASE_REF"
