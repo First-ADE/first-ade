@@ -101,7 +101,13 @@ def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, N
     """
     import time
 
-    lock_path = f"{file_path}.lock"
+    base_dir = Path(".").resolve()
+    safe_target = sanitize_relative_path(base_dir, file_path)
+    if not safe_target:
+        yield False
+        return
+
+    lock_path = f"{safe_target}.lock"
     start_time = time.monotonic()
     acquired = False
     delay = 0.01
