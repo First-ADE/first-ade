@@ -25,6 +25,7 @@ class Engines(BaseModel):
     spec: EngineConfig = EngineConfig()
     test: EngineConfig = EngineConfig()
     trace: EngineConfig = Field(default_factory=EngineConfig, alias="traceability")
+    adr: EngineConfig = EngineConfig()
 
     model_config = {"extra": "ignore"}
 
