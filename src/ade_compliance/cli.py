@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import click
 
-from ade_compliance.config import load_config, Config
+from ade_compliance.config import load_config, Config, get_axiom_strictness
 from ade_compliance.services.orchestrator import Orchestrator
 from ade_compliance.models.report import ComplianceReport
 
@@ -20,21 +20,12 @@ def determine_exit_code(violations: List, config: Config) -> int:
     if not violations:
         return 0
 
-    global_strict = config.global_settings.strictness or "warn"
     has_enforce = False
     has_warn = False
 
     for v in violations:
         axiom_id = v.axiom_id or ""
-        engine_strictness = None
-        if axiom_id.startswith("Π.1"):
-            engine_strictness = config.engines.spec.strictness
-        elif axiom_id.startswith("Π.2"):
-            engine_strictness = config.engines.test.strictness
-        elif axiom_id.startswith("Π.3") or axiom_id.startswith("Π.3.1"):
-            engine_strictness = config.engines.trace.strictness
-
-        strictness = engine_strictness or global_strict
+        strictness = get_axiom_strictness(config, axiom_id)
 
         if strictness == "enforce":
             has_enforce = True

@@ -7,6 +7,7 @@ from sqlalchemy import Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from ..config import Config
+from ..observability.logging import logger
 
 Base = declarative_base()
 
@@ -44,6 +45,8 @@ class AuditService:
         self.Session = sessionmaker(bind=self.engine)
 
     def log(self, action: str, details: Dict[str, Any]):
+        # Log structured JSON to stdout using loguru
+        logger.info("audit_event", action=action, details=details)
         session = self.Session()
         try:
             # Get last hash
