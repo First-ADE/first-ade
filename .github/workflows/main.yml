@@ -10,6 +10,9 @@ on:
       - main
       - 001-ade-compliance
 
+permissions:
+  contents: read
+
 jobs:
   python-ci:
     name: Python Library Tests & Linting

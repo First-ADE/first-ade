@@ -60,16 +60,19 @@ class Orchestrator:
         traceability_matrix = {}
         if self.trace_engine:
             all_links = []
+            base_dir = Path(".").resolve()
             for file_path in files:
-                path = Path(file_path)
-                if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
-                    try:
+                try:
+                    path = Path(file_path).resolve()
+                    if not path.is_relative_to(base_dir):
+                        continue
+                    if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
                         with open(path, "r", encoding="utf-8") as f:
                             content = f.read()
                         links = self.trace_engine.extract_links(file_path, content)
                         all_links.extend(links)
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
             traceability_matrix = self.trace_engine.generate_matrix(all_links)
 
         # Log findings
