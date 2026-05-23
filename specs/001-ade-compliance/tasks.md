@@ -183,15 +183,15 @@
 
 ### Tests for US-5
 
-- [ ] T042 [P] [US5] Unit tests for escalation service (criticality routing, 3-failure escalation, local queue retry) in tests/unit/services/test_escalation.py
+- [x] T042 [P] [US5] Unit tests for escalation service (criticality routing, 3-failure escalation, local queue retry) in tests/unit/services/test_escalation.py
 
 ### Implementation for US-5
 
-- [ ] T043 [US5] Implement escalation service: criticality classification (low/med auto-approve, high/critical → escalate) in src/ade_compliance/services/escalation.py
-- [ ] T044 [US5] Implement 3-failure escalation trigger (Π.5.3) with full context packaging in src/ade_compliance/services/escalation.py
-- [ ] T045 [US5] Implement GitHub integration (create issues, PR comments) in src/ade_compliance/services/escalation.py
-- [ ] T046 [US5] Implement local queue with exponential backoff (5 retries / 15 min) for GitHub failures in src/ade_compliance/services/escalation.py
-- [ ] T047 [US5] Implement Human Architect review rate tracking (<5% threshold, FR-022) in src/ade_compliance/services/escalation.py
+- [x] T043 [US5] Implement escalation service: criticality classification (low/med auto-approve, high/critical → escalate) in src/ade_compliance/services/escalation.py
+- [x] T044 [US5] Implement 3-failure escalation trigger (Π.5.3) with full context packaging in src/ade_compliance/services/escalation.py
+- [x] T045 [US5] Implement GitHub integration (create issues, PR comments) in src/ade_compliance/services/escalation.py
+- [x] T046 [US5] Implement local queue with exponential backoff (5 retries / 15 min) for GitHub failures in src/ade_compliance/services/escalation.py
+- [x] T047 [US5] Implement Human Architect review rate tracking (<5% threshold, FR-022) in src/ade_compliance/services/escalation.py
 
 **Checkpoint**: Escalation service routes decisions correctly with GitHub resilience
 
