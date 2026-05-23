@@ -105,15 +105,19 @@ def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, N
     import time
 
     # Securely resolve and sanitize target lock path to prevent uncontrolled path traversal (CodeQL mitigation)
-    # Securely resolve path against base project root directory to prevent directory traversal
-    base_dir = Path(".").resolve()
-    resolved_path = Path(f"{file_path}.lock").resolve()
-
-    # Enforce strict path containment to resolve CodeQL path expression warning
-    if os.path.commonpath([str(base_dir), str(resolved_path)]) != str(base_dir):
-        raise ValueError("File lock path must reside within the trusted project directory.")
-
-    lock_path = str(resolved_path)
+    try:
+        base_dir = Path(".").resolve()
+        safe_path = sanitize_relative_path(base_dir, file_path)
+        if safe_path is None:
+            # Fall back to using only the safe basename of the file in current directory
+            # Strip any dangerous directory traversal or invalid characters from the basename
+            safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
+            lock_path = str(base_dir / f"{safe_base}.lock")
+        else:
+            lock_path = f"{safe_path}.lock"
+    except Exception:
+        safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
+        lock_path = str(Path(".").resolve() / f"{safe_base}.lock")
     start_time = time.monotonic()
     acquired = False
     delay = 0.01
