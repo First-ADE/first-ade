@@ -9,7 +9,6 @@ Provides:
 - Local SQLite queue with exponential backoff retries.
 - GitHub API integration for issue creation.
 - Human Architect review rate tracking.
-Consolidates engine setup using the centralized database manager.
 """
 
 import json
@@ -20,10 +19,12 @@ import httpx
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 
 from ..config import Config
+from ..exceptions import EscalationBlockedException
 from ..models.decision import Decision
 from ..observability.metrics import escalation_queue_depth, escalation_total
-from ..services.audit import AuditEntry, AuditService
-from .db import Base, db_session
+from ..services.audit import AuditEntry
+from .base import BaseService
+from .db import Base
 
 
 class QueuedEscalation(Base):
@@ -39,19 +40,14 @@ class QueuedEscalation(Base):
     error_message = Column(String, nullable=True)
 
 
-class EscalationService:
+class EscalationService(BaseService):
+    """Service to route high-criticality decisions to human reviews and handle retry queues."""
+
     def __init__(self, config: Config):
-        self.config = config
-        self.audit = AuditService(config)
-
-        from sqlalchemy.orm import sessionmaker
-
-        from .db import Base as db_Base
-        from .db import get_engine
-
-        self.engine = get_engine(config)
-        db_Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        super().__init__(config)
+        self.engine = self.db_manager.get_engine(self.config)
+        _, session_factory = self.db_manager.get_engine_and_factory(self.config)
+        self.Session = session_factory
 
         # GitHub configuration from config
         self.github_repo = self.config.escalation.github_repo
@@ -60,7 +56,7 @@ class EscalationService:
 
         self._update_queue_metric()
 
-    def _update_queue_metric(self):
+    def _update_queue_metric(self) -> None:
         """Update the Prometheus gauge for queue depth."""
         try:
             escalation_queue_depth.set(self.get_queue_depth())
@@ -69,12 +65,12 @@ class EscalationService:
 
     def get_queue_depth(self) -> int:
         """Get number of active (non-blocked) items in local queue."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             return session.query(QueuedEscalation).filter(QueuedEscalation.is_blocked == False).count()
 
     def is_agent_blocked(self) -> bool:
         """Check if agent is blocked due to undelivered/blocked queue items (fail-closed)."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             blocked_count = session.query(QueuedEscalation).filter(QueuedEscalation.is_blocked == True).count()
             return blocked_count > 0
 
@@ -130,7 +126,9 @@ class EscalationService:
     async def escalate(self, title: str, body: str) -> bool:
         """Escalate a notification. Attempts to post to GitHub, otherwise queues locally."""
         if self.is_agent_blocked():
-            raise RuntimeError("Agent is blocked due to undelivered escalations in the local queue (fail-closed).")
+            raise EscalationBlockedException(
+                "Agent is blocked due to undelivered escalations in the local queue (fail-closed)."
+            )
 
         escalation_total.inc()
 
@@ -140,7 +138,7 @@ class EscalationService:
             return True
 
         # Queue locally
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
                 minutes=1
             )  # first retry in 1 minute
@@ -158,7 +156,7 @@ class EscalationService:
 
     def check_consecutive_failures(self) -> bool:
         """Check if the last 3 consecutive runs finished with violations (failure)."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             # Query last 3 RUN_COMPLETE actions
             runs = (
                 session.query(AuditEntry)
@@ -181,7 +179,7 @@ class EscalationService:
 
     async def process_queue(self) -> None:
         """Process any pending local queued escalations with exponential backoff."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             pending = (
                 session.query(QueuedEscalation)
@@ -219,7 +217,7 @@ class EscalationService:
 
     def get_human_review_rate(self) -> float:
         """Calculate the percentage of all compliance decisions requiring human review."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             entries = session.query(AuditEntry).filter(AuditEntry.action == "DECISION_EVALUATED").all()
             if not entries:
                 return 0.0
