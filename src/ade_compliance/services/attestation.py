@@ -69,25 +69,10 @@ class AttestationService:
             },
         )
 
-        # Safe async runner helper
-        def run_async_safe(coro):
-            import asyncio
-            from concurrent.futures import ThreadPoolExecutor
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-
-            if loop and loop.is_running():
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(lambda: asyncio.run(coro))
-                    return future.result()
-            else:
-                return asyncio.run(coro)
-
         # If escalated, log escalation event and trigger EscalationService
         from ..models.decision import Decision
         from ..services.escalation import EscalationService
+        from ..utils.async_helpers import run_async_safe
         
         escalation_service = EscalationService(self.config)
 
