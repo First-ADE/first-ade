@@ -27,6 +27,6 @@ jobs:
 
       - name: Run PR Size Verifier
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || github.event.merge_group.base_ref || 'main' }}
         run: |
           python .github/scripts/verify_pr_size.py --base "$BASE_REF" --limit 200

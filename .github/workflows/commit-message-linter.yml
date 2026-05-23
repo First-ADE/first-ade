@@ -27,6 +27,6 @@ jobs:
 
       - name: Run Commit Message Verifier
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || github.event.merge_group.base_ref || 'main' }}
         run: |
           python .github/scripts/verify_commits.py --base "$BASE_REF"
