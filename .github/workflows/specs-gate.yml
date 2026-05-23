@@ -41,6 +41,12 @@ jobs:
               continue
             fi
             
+            # Skip if the path is not a directory (e.g. direct files under specs/)
+            if [ ! -d "$dir" ]; then
+              echo "Skipping non-directory spec file: $dir"
+              continue
+            fi
+            
             echo "============================================="
             echo "Checking Spec-Kit directory: $dir"
             
