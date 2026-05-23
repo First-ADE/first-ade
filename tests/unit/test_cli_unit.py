@@ -16,6 +16,7 @@ def test_cli_subcommands_registered():
     assert "check-spec" in result.output
     assert "check-test" in result.output
     assert "check-traceability" in result.output
+    assert "check-adr" in result.output
     assert "generate-report" in result.output
     assert "override" in result.output
 
