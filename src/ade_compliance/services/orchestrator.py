@@ -63,16 +63,24 @@ class Orchestrator:
             base_dir = Path(".").resolve()
             for file_path in files:
                 try:
-                    # Normalize backslashes to forward slashes for cross-platform matching
+                    # Normalize backslashes to forward slashes for cross-platform splitting
                     file_path_str = str(file_path).replace("\\", "/")
                     
-                    # Strictly validate path structure via regex whitelist and block traversal
+                    # Split path into components and strictly validate each segment
+                    parts = file_path_str.split("/")
+                    safe_parts = []
                     import re
-                    if not re.match(r"^[a-zA-Z0-9_\-/.]+$", file_path_str) or ".." in file_path_str:
+                    for part in parts:
+                        # Allow only safe alphanumeric characters, underscores, hyphens, and dots
+                        if not re.match(r"^[a-zA-Z0-9_\-.]+$", part) or part in ("", ".", ".."):
+                            continue
+                        safe_parts.append(part)
+                    
+                    if not safe_parts:
                         continue
                     
-                    # Construct absolute resolved path
-                    path = (base_dir / file_path_str).resolve()
+                    # Construct absolute resolved path purely from validated safe segments
+                    path = base_dir.joinpath(*safe_parts).resolve()
                     
                     # Double-lock directory boundaries via standard commonpath validation
                     import os
