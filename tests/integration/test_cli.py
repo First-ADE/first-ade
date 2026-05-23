@@ -26,8 +26,10 @@ def test_cli_check_all_no_violations():
 
 def test_cli_check_all_with_violations_warn():
     runner = CliRunner()
-    with patch("ade_compliance.cli.Orchestrator") as MockOrch, \
-         patch("ade_compliance.cli.load_config", return_value=Config()) as mock_load_config:
+    with (
+        patch("ade_compliance.cli.Orchestrator") as MockOrch,
+        patch("ade_compliance.cli.load_config", return_value=Config()) as mock_load_config,
+    ):
         instance = MockOrch.return_value
 
         async def mock_run(*args, **kwargs):
@@ -83,9 +85,7 @@ def test_cli_check_traceability_executes():
 
         async def mock_run(*args, **kwargs):
             return ComplianceReport(
-                repo_root=".",
-                violations=[],
-                traceability_matrix={"src/foo.py": {"implements": ["Axiom Π.3.1"]}}
+                repo_root=".", violations=[], traceability_matrix={"src/foo.py": {"implements": ["Axiom Π.3.1"]}}
             )
 
         instance.run.side_effect = mock_run
@@ -98,8 +98,10 @@ def test_cli_check_traceability_executes():
 
 def test_cli_generate_report_outputs_json():
     runner = CliRunner()
-    with patch("ade_compliance.cli.Orchestrator") as MockOrch, \
-         patch("ade_compliance.cli.load_config", return_value=Config()) as mock_load_config:
+    with (
+        patch("ade_compliance.cli.Orchestrator") as MockOrch,
+        patch("ade_compliance.cli.load_config", return_value=Config()) as mock_load_config,
+    ):
         instance = MockOrch.return_value
 
         async def mock_run(*args, **kwargs):
@@ -114,7 +116,7 @@ def test_cli_generate_report_outputs_json():
 
         result = runner.invoke(main, ["generate-report", "src/"])
         assert result.exit_code == 2
-        
+
         # Verify output is valid JSON
         data = json.loads(result.output)
         assert data["repo_root"] == "."
@@ -140,7 +142,7 @@ def test_cli_override_creation_success():
                 "This rationale is long enough to satisfy constraints and validation.",
                 "--created-by",
                 "HA-01",
-            ]
+            ],
         )
         assert result.exit_code == 0
         assert "Override created successfully" in result.output

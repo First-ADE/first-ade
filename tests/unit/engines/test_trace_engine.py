@@ -35,15 +35,10 @@ async def test_check_valid_traceability_links(trace_engine):
 
 
 def test_extract_python_comments(trace_engine):
-    code_content = (
-        "# implements: FR-001, Requirement 1.2\n"
-        "# traces_to: Π.3.1\n"
-        "def run():\n"
-        "    pass\n"
-    )
+    code_content = "# implements: FR-001, Requirement 1.2\n# traces_to: Π.3.1\ndef run():\n    pass\n"
     links = trace_engine.extract_links("src/run.py", code_content)
     assert len(links) == 3
-    
+
     # Verify implements links
     impls = [k for k in links if k.type == "implements"]
     assert len(impls) == 2
@@ -56,14 +51,10 @@ def test_extract_python_comments(trace_engine):
 
 
 def test_extract_javascript_comments(trace_engine):
-    code_content = (
-        "// implements: FR-002\n"
-        "/* validates: src/run.py */\n"
-        "const x = 1;\n"
-    )
+    code_content = "// implements: FR-002\n/* validates: src/run.py */\nconst x = 1;\n"
     links = trace_engine.extract_links("src/run.js", code_content)
     assert len(links) == 2
-    
+
     impls = [k for k in links if k.type == "implements"]
     assert len(impls) == 1
     assert impls[0].target == "FR-002"
@@ -74,16 +65,10 @@ def test_extract_javascript_comments(trace_engine):
 
 
 def test_extract_java_comments(trace_engine):
-    code_content = (
-        "// implements: FR-003\n"
-        "/**\n"
-        " * validates: FR-004, FR-005\n"
-        " */\n"
-        "class Main {}\n"
-    )
+    code_content = "// implements: FR-003\n/**\n * validates: FR-004, FR-005\n */\nclass Main {}\n"
     links = trace_engine.extract_links("src/Main.java", code_content)
     assert len(links) == 3
-    
+
     impls = [k for k in links if k.type == "implements"]
     assert len(impls) == 1
     assert impls[0].target == "FR-003"
@@ -96,14 +81,14 @@ def test_extract_java_comments(trace_engine):
 def test_matrix_generation(trace_engine):
     code_content_1 = "# implements: FR-001\n# traces_to: Π.3.1\ndef a(): pass\n"
     code_content_2 = "# validates: src/a.py\n# implements: FR-001\ndef test_a(): pass\n"
-    
+
     # Extract links manually to feed to matrix
     links_1 = trace_engine.extract_links("src/a.py", code_content_1)
     links_2 = trace_engine.extract_links("tests/test_a.py", code_content_2)
-    
+
     all_links = links_1 + links_2
     matrix = trace_engine.generate_matrix(all_links)
-    
+
     assert "src/a.py" in matrix
     assert matrix["src/a.py"]["implements"] == ["FR-001"]
     assert matrix["src/a.py"]["traces_to"] == ["Π.3.1"]
@@ -116,7 +101,7 @@ def test_matrix_generation(trace_engine):
 @pytest.mark.asyncio
 async def test_caching_behavior(trace_engine):
     code_content = "# implements: FR-001\n"
-    
+
     with patch("builtins.open", mock_open(read_data=code_content)):
         with patch("pathlib.Path.exists", return_value=True):
             mock_parser = Mock()
@@ -125,7 +110,7 @@ async def test_caching_behavior(trace_engine):
                 violations_1 = await trace_engine.check(["src/math.py"])
                 assert len(violations_1) == 0
                 assert mock_parser.parse.call_count == 1
-                
+
                 # Second check with same file - should hit cache and NOT parse again
                 violations_2 = await trace_engine.check(["src/math.py"])
                 assert len(violations_2) == 0

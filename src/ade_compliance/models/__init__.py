@@ -102,15 +102,18 @@ class Attestation(BaseModel):
 
 class ComplianceReport(BaseModel):
     schema_version: str = Field(default="1.0.0", alias="version")
-    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), alias="timestamp")
+    generated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        alias="timestamp",
+    )
     repo_root: str
     commit_sha: Optional[str] = None
     check_duration_ms: int = 0
-    checks_run: List[Dict[str, Any]] = []
-    violations: List[Violation] = []
-    summary: Dict[str, int] = {}
-    traceability_matrix: Dict[str, Dict[str, List[str]]] = {}
-    metrics: Dict[str, Any] = {}
+    checks_run: List[Dict[str, Any]] = Field(default_factory=list)
+    violations: List[Violation] = Field(default_factory=list)
+    summary: Dict[str, int] = Field(default_factory=dict)
+    traceability_matrix: Dict[str, Dict[str, List[str]]] = Field(default_factory=dict)
+    metrics: Dict[str, Any] = Field(default_factory=dict)
     attestation: Optional[Any] = None
 
     model_config = {"populate_by_name": True}
@@ -123,10 +126,12 @@ class ComplianceReport(BaseModel):
     def timestamp(self) -> datetime:
         return self.generated_at
 
-    def generate_summary(self):
+    def generate_summary(self) -> str:
         self.summary = {
             "total": len(self.violations),
-            "new": sum(1 for v in self.violations if v.state == "new"),
-            "resolved": sum(1 for v in self.violations if v.state == "resolved"),
+            "new": sum(1 for v in self.violations if v.state == ViolationState.NEW),
+            "acknowledged": sum(1 for v in self.violations if v.state == ViolationState.ACKNOWLEDGED),
+            "resolved": sum(1 for v in self.violations if v.state == ViolationState.RESOLVED),
+            "overridden": sum(1 for v in self.violations if v.state == ViolationState.OVERRIDDEN),
         }
         return f"Violations: {self.summary['total']} (New: {self.summary['new']}, Resolved: {self.summary['resolved']})"
