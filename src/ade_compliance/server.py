@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, Query, Header, Depends, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 

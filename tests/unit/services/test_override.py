@@ -5,12 +5,11 @@ path scope matching (FILE, DIRECTORY, COMPONENT), and revocation behaviors.
 """
 
 import uuid
-from datetime import datetime, timedelta
 
 import pytest
 
 from ade_compliance.config import Config, GlobalSettings
-from ade_compliance.services.override import OverrideService, OverrideEntry
+from ade_compliance.services.override import OverrideEntry, OverrideService
 
 
 @pytest.fixture
