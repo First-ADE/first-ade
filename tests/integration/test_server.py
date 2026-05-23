@@ -107,11 +107,80 @@ class TestOverridesEndpoint:
     """T063: Overrides endpoint tests."""
 
     def test_overrides_returns_list(self, client):
-        """GET /overrides should return a list."""
+        """GET /overrides should return a list of active overrides."""
         response = client.get("/overrides")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
+    def test_create_override_success(self, client):
+        """POST /overrides with valid parameters should create the override successfully."""
+        response = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["axiom_id"] == "Π.1.1"
+        assert data["scope_value"] == "src/main.py"
+        assert "id" in data
+
+        # Verify it shows up in GET /overrides list
+        list_resp = client.get("/overrides")
+        assert list_resp.status_code == 200
+        list_data = list_resp.json()
+        assert any(item["id"] == data["id"] for item in list_data)
+
+    def test_create_override_validation_errors(self, client):
+        """POST /overrides with invalid rationale or permanent constraints should return 422."""
+        # Short rationale
+        resp_short = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "Short",
+                "created_by": "architect-1",
+            },
+        )
+        assert resp_short.status_code == 422
+
+        # Permanent without justification
+        resp_no_just = client.post(
+            "/overrides",
+            json={
+                "axiom_id": "Π.1.1",
+                "scope_type": "FILE",
+                "scope_value": "src/main.py",
+                "rationale": "This is a very long rationale of more than twenty characters.",
+                "created_by": "architect-1",
+                "is_permanent": True,
+                "permanent_justification": "",
+            },
+        )
+        assert resp_no_just.status_code == 422
+
+
+class TestTrendEndpoint:
+    """T063: Trend reporting endpoint tests."""
+
+    def test_trend_returns_aggregated_metrics(self, client):
+        """GET /reports/trend should return the daily trends."""
+        response = client.get("/reports/trend?days=30")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days"] == 30
+        assert "runs_count" in data
+        assert "violations_count" in data
+        assert "violations_by_day" in data
+        assert "overrides_count" in data
 
 
 class TestMetricsEndpoint:

@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from sqlalchemy import Column, DateTime, Integer, String, create_engine
@@ -79,5 +79,60 @@ class AuditService:
                 }
                 for e in entries
             ]
+        finally:
+            session.close()
+
+    def get_trend_report(self, days: int = 30) -> Dict[str, Any]:
+        """Aggregate compliance metrics and trends over the last specified number of days."""
+        session = self.Session()
+        try:
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            entries = session.query(AuditEntry).filter(AuditEntry.timestamp >= cutoff).all()
+
+            runs_count = 0
+            violations_count = 0
+            violations_by_day = {}
+            violations_by_axiom = {}
+            violations_by_severity = {}
+            overrides_count = 0
+            overrides_by_day = {}
+
+            for e in entries:
+                date_str = e.timestamp.strftime("%Y-%m-%d")
+                details = {}
+                try:
+                    details = json.loads(e.details)
+                except Exception:
+                    pass
+
+                if e.action == "RUN_COMPLETE":
+                    runs_count += 1
+                    v_count = details.get("violations_count", 0)
+                    violations_count += v_count
+                    violations_by_day[date_str] = violations_by_day.get(date_str, 0) + v_count
+                
+                elif e.action == "PRE_CHECK_RUN":
+                    runs_count += 1
+
+                elif e.action == "VIOLATION_DETECTED":
+                    ax = details.get("axiom_id", "unknown")
+                    sev = details.get("severity", "unknown")
+                    violations_by_axiom[ax] = violations_by_axiom.get(ax, 0) + 1
+                    violations_by_severity[sev] = violations_by_severity.get(sev, 0) + 1
+
+                elif e.action == "OVERRIDE_RECORDED":
+                    overrides_count += 1
+                    overrides_by_day[date_str] = overrides_by_day.get(date_str, 0) + 1
+
+            return {
+                "days": days,
+                "runs_count": runs_count,
+                "violations_count": violations_count,
+                "violations_by_day": violations_by_day,
+                "violations_by_axiom": violations_by_axiom,
+                "violations_by_severity": violations_by_severity,
+                "overrides_count": overrides_count,
+                "overrides_by_day": overrides_by_day,
+            }
         finally:
             session.close()
