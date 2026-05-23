@@ -37,23 +37,26 @@ def test_exception_inheritance():
     assert issubclass(EscalationBlockedException, RuntimeError)  # Backward compatibility check
 
 
-def test_exception_raising():
-    """Verify raising custom exceptions behaves exactly as expected."""
-    # 1. ValidationException
+def test_validation_exception_raising():
+    """Verify ValidationException behaves as a ValueError."""
     with pytest.raises(ValidationException):
         raise ValidationException("Invalid validation parameters.")
 
     with pytest.raises(ValueError):
         raise ValidationException("Must behave as a ValueError.")
 
-    # 2. CryptoAttestationException
+
+def test_crypto_attestation_exception_raising():
+    """Verify CryptoAttestationException behaves as a ValueError."""
     with pytest.raises(CryptoAttestationException):
         raise CryptoAttestationException("Invalid signature.")
 
     with pytest.raises(ValueError):
         raise CryptoAttestationException("Must behave as a ValueError.")
 
-    # 3. EscalationBlockedException
+
+def test_escalation_blocked_exception_raising():
+    """Verify EscalationBlockedException behaves as a RuntimeError."""
     with pytest.raises(EscalationBlockedException):
         raise EscalationBlockedException("Agent is blocked.")
 

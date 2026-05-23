@@ -21,6 +21,9 @@ __all__ = ["revision", "down_revision", "branch_labels", "depends_on"]
 
 
 def upgrade() -> None:
+    # Mitigate unused global variable warnings for Alembic parameters
+    _ = (revision, down_revision, branch_labels, depends_on)
+
     # Create audit_log table
     op.create_table(
         "audit_log",
