@@ -46,6 +46,7 @@ def _run_checks(
     run_spec: bool = True,
     run_test: bool = True,
     run_trace: bool = True,
+    run_adr: bool = True,
 ) -> Tuple[ComplianceReport, Config]:
     # Expand paths
     files = []
@@ -70,6 +71,8 @@ def _run_checks(
     cfg.engines.spec.enabled = cfg.engines.spec.enabled and run_spec
     cfg.engines.test.enabled = cfg.engines.test.enabled and run_test
     cfg.engines.trace.enabled = cfg.engines.trace.enabled and run_trace
+    if hasattr(cfg.engines, "adr"):
+        cfg.engines.adr.enabled = cfg.engines.adr.enabled and run_adr
 
     # Run Orchestrator
     orchestrator = Orchestrator(cfg)
@@ -100,7 +103,7 @@ def main():
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def run(paths: List[str], config: str):
     """Run compliance checks on the specified paths (legacy compatibility)."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True)
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
     click.echo(report.generate_summary())
     if report.violations:
         sys.exit(1)
@@ -112,7 +115,7 @@ def run(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_all(paths: List[str], config: str):
     """Run all compliance checks on the specified paths."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True)
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -123,7 +126,7 @@ def check_all(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_spec(paths: List[str], config: str):
     """Run specification compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=False, run_trace=False)
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=False, run_trace=False, run_adr=False)
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -134,7 +137,7 @@ def check_spec(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_test(paths: List[str], config: str):
     """Run test compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=True, run_trace=False)
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=True, run_trace=False, run_adr=False)
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -145,7 +148,7 @@ def check_test(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_traceability(paths: List[str], config: str):
     """Run traceability checks and generate matrix."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True)
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False)
 
     # Print Traceability Matrix
     click.echo("\n--- Traceability Matrix ---")
@@ -170,12 +173,23 @@ def check_traceability(paths: List[str], config: str):
     sys.exit(0)
 
 
+@main.command(name="check-adr")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_adr(paths: List[str], config: str):
+    """Run ADR compliance and architectural change checks."""
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=True)
+    click.echo(report.generate_summary())
+    exit_code = determine_exit_code(report.violations, cfg)
+    sys.exit(exit_code)
+
+
 @main.command(name="generate-report")
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def generate_report(paths: List[str], config: str):
     """Generate machine-readable JSON compliance report."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True)
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
     report.generate_summary()
     click.echo(report.model_dump_json(by_alias=True))
     exit_code = determine_exit_code(report.violations, cfg)
