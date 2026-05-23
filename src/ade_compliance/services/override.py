@@ -79,8 +79,15 @@ class OverrideService:
         if len(rationale) < 20:
             raise ValueError("Rationale must be at least 20 characters long.")
 
-        if is_permanent and not permanent_justification:
-            raise ValueError("permanent_justification is required when is_permanent is True")
+        if is_permanent:
+            justification = (permanent_justification or "").strip()
+            if not justification:
+                raise ValueError("permanent_justification is required when is_permanent is True")
+            if not (justification.startswith("SSO-PR-") or justification.startswith("SSO-SIG-")):
+                raise ValueError(
+                    "permanent_justification must start with either 'SSO-PR-' or 'SSO-SIG-' "
+                    "for elevated justification validation."
+                )
 
         expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=expires_in_days)
         override_id = str(uuid.uuid4())

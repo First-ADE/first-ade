@@ -84,6 +84,33 @@ class TestOverrideService:
                 permanent_justification="",
             )
 
+    def test_create_override_permanent_unprefixed_rejected(self, override_service):
+        """Permanent override with unprefixed justification must raise ValueError."""
+        with pytest.raises(ValueError, match="must start with either 'SSO-PR-' or 'SSO-SIG-'"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="FILE",
+                scope_value="src/main.py",
+                rationale="This is a very long rationale of more than twenty characters.",
+                created_by="architect-1",
+                is_permanent=True,
+                permanent_justification="This is an invalid unprefixed justification.",
+            )
+
+    def test_create_override_permanent_prefixed_success(self, override_service):
+        """Permanent override with SSO-PR- or SSO-SIG- prefixed justification must succeed."""
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+            is_permanent=True,
+            permanent_justification="SSO-PR-123-This is a valid permanent justification.",
+        )
+        assert o.is_permanent is True
+        assert o.permanent_justification == "SSO-PR-123-This is a valid permanent justification."
+
     def test_get_active_overrides_filters_expired_and_revoked(self, override_service):
         """get_active_overrides must exclude expired or revoked overrides."""
         # 1. Create a normal active override

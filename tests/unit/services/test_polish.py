@@ -50,7 +50,7 @@ def test_override_service_expiring_notifications(tmp_path):
         rationale="My long justification rationale for override test.",
         created_by="architect-1",
         is_permanent=True,
-        permanent_justification="Permanent necessity because of system constraints.",
+        permanent_justification="SSO-PR-Permanent necessity because of system constraints.",
     )
 
     # 3. Create another override expiring in 30 days (should not trigger alert)
