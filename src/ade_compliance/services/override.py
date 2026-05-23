@@ -244,18 +244,7 @@ class OverrideService:
                         f"Please review and recreate if a renewal is required."
                     )
                     
-                    # Safe async trigger helper
-                    import asyncio
-                    try:
-                        loop = asyncio.get_running_loop()
-                    except RuntimeError:
-                        loop = None
-                        
-                    if loop and loop.is_running():
-                        from concurrent.futures import ThreadPoolExecutor
-                        with ThreadPoolExecutor() as executor:
-                            executor.submit(lambda: asyncio.run(escalation_service.escalate(title, body))).result()
-                    else:
-                        asyncio.run(escalation_service.escalate(title, body))
+                    from ..utils.async_helpers import run_async_safe
+                    run_async_safe(escalation_service.escalate(title, body))
                         
             return expiring
