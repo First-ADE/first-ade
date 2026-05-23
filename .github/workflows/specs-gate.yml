@@ -5,23 +5,28 @@ on:
     paths:
       - 'specs/**'
 
+permissions:
+  contents: read
+
 jobs:
   validate-specs:
     name: Validate Spec-Kit Structures
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93f18e97669d012431776993108c4912959 # v6.0.0
         with:
           fetch-depth: 0 # Fetch all history for diff checks
 
       - name: Validate changed Spec-Kit folders
         shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           echo "Checking for changed directories under specs/..."
           
           # Get list of changed files under specs/
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^specs/' || true)
+          changed_files=$(git diff --name-only origin/"$BASE_REF"...HEAD | grep '^specs/' || true)
           
           if [ -z "$changed_files" ]; then
             echo "No specification files found in the pull request diff."
