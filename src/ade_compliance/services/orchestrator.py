@@ -1,3 +1,5 @@
+"""Compliance Orchestrator Coordinating Verification Engines."""
+
 import asyncio
 from pathlib import Path
 from typing import List
@@ -8,6 +10,7 @@ from ..engines.test_engine import TestEngine
 from ..engines.trace_engine import TraceEngine
 from ..models.report import ComplianceReport
 from ..services.audit import AuditService
+from ..utils.path import sanitize_relative_path
 
 
 class Orchestrator:
@@ -63,28 +66,8 @@ class Orchestrator:
             base_dir = Path(".").resolve()
             for file_path in files:
                 try:
-                    # Normalize backslashes to forward slashes for cross-platform splitting
-                    file_path_str = str(file_path).replace("\\", "/")
-                    
-                    # Split path into components and strictly validate each segment
-                    parts = file_path_str.split("/")
-                    safe_parts = []
-                    import re
-                    for part in parts:
-                        # Allow only safe alphanumeric characters, underscores, hyphens, and dots
-                        if not re.match(r"^[a-zA-Z0-9_\-.]+$", part) or part in ("", ".", ".."):
-                            continue
-                        safe_parts.append(part)
-                    
-                    if not safe_parts:
-                        continue
-                    
-                    # Construct absolute resolved path purely from validated safe segments
-                    path = base_dir.joinpath(*safe_parts).resolve()
-                    
-                    # Double-lock directory boundaries via standard commonpath validation
-                    import os
-                    if os.path.commonpath([str(base_dir), str(path)]) != str(base_dir):
+                    path = sanitize_relative_path(base_dir, file_path)
+                    if not path:
                         continue
                     
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
