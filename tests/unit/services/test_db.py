@@ -2,7 +2,7 @@
 # traces_to: Π.2.1
 
 from ade_compliance.config import Config
-from ade_compliance.services.db import get_engine, db_session
+from ade_compliance.services.db import db_session, get_engine
 
 
 def test_get_engine_memory():
