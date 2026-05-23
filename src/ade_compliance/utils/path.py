@@ -99,25 +99,31 @@ def normalize_project_path(file_path: str) -> str:
 def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, None, None]:
     """A cross-platform file-system lock to serialize concurrent file access.
 
-    Creates a temporary lock file (file_path.lock) atomically using O_CREAT | O_EXCL.
+    Creates a temporary lock file atomically using O_CREAT | O_EXCL.
     Retries with exponential backoff if the lock is held, up to the timeout budget.
     """
+    import hashlib
     import time
 
-    # Securely resolve and sanitize target lock path to prevent uncontrolled path traversal (CodeQL mitigation)
+    # Securely compute lock path using a SHA-256 hash of the normalized path.
+    # Using a deterministic hash cuts the taint flow from the user-provided string
+    # and prevents any path traversal sequences or special characters in the filename.
     try:
+        normalized = normalize_project_path(file_path)
+        path_hash = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
         base_dir = Path(".").resolve()
-        safe_path = sanitize_relative_path(base_dir, file_path)
-        if safe_path is None:
-            # Fall back to using only the safe basename of the file in current directory
-            # Strip any dangerous directory traversal or invalid characters from the basename
-            safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
-            lock_path = str(base_dir / f"{safe_base}.lock")
-        else:
-            lock_path = f"{safe_path}.lock"
+        lock_path = str(base_dir / f"lock_{path_hash}.lock")
     except Exception:
-        safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
-        lock_path = str(Path(".").resolve() / f"{safe_base}.lock")
+        # Fail-safe robust fallback using only hashed raw input string
+        try:
+            path_hash = hashlib.sha256(str(file_path).encode("utf-8")).hexdigest()
+            base_dir = Path(".").resolve()
+            lock_path = str(base_dir / f"lock_{path_hash}.lock")
+        except Exception:
+            # Extremely safe minimal fallback if encoding/hashing fails
+            safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
+            lock_path = str(Path(".").resolve() / f"lock_fallback_{safe_base}.lock")
+
     start_time = time.monotonic()
     acquired = False
     delay = 0.01

@@ -21,6 +21,9 @@ __all__ = ["revision", "down_revision", "branch_labels", "depends_on"]
 
 
 def upgrade() -> None:
+    # Mitigate unused global variable warnings for Alembic parameters
+    _ = (revision, down_revision, branch_labels, depends_on)
+
     # Add expiry_notified column to override_log table
     op.add_column(
         "override_log", sa.Column("expiry_notified", sa.Boolean(), server_default=sa.text("0"), nullable=True)
