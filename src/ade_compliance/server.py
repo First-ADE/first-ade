@@ -1,3 +1,6 @@
+# implements: FR-018
+# traces_to: Π.3.1
+
 """T062/T063/T066: FastAPI server for ADE Compliance Framework.
 
 Provides HTTP API endpoints for agent self-governance:
@@ -18,7 +21,7 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, R
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from ade_compliance.config import Config, GlobalSettings, load_config
+from ade_compliance.config import Config, load_config
 from ade_compliance.observability.metrics import (
     attestation_confidence,
     attestation_total,
@@ -95,10 +98,7 @@ def get_override_service(request: Request) -> OverrideService:
 def get_current_sso_user(x_sso_user: Optional[str] = Header(None, alias="X-SSO-User")) -> str:
     """Validate that the request has a valid SSO user identifier in headers."""
     if not x_sso_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized: Missing X-SSO-User SSO authentication header."
-        )
+        raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
     return x_sso_user
 
 
@@ -225,7 +225,7 @@ def create_override(
     if request.created_by != current_user:
         raise HTTPException(
             status_code=403,
-            detail=f"Forbidden: SSO user '{current_user}' does not match created_by '{request.created_by}'"
+            detail=f"Forbidden: SSO user '{current_user}' does not match created_by '{request.created_by}'",
         )
     try:
         o = override_service.create_override(
@@ -285,7 +285,7 @@ def create_app(
 
     # Override audit path if provided (testing)
     if audit_path:
-        config = Config(global_settings=GlobalSettings(audit_path=audit_path))
+        config.global_settings.audit_path = audit_path
 
     # Initialize services
     attestation_service = AttestationService(config)
