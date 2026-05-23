@@ -40,22 +40,46 @@ def test_exception_inheritance():
 def test_exception_raising():
     """Verify raising custom exceptions behaves exactly as expected."""
     # 1. ValidationException
-    with pytest.raises(ValidationException):
+    try:
         raise ValidationException("Invalid validation parameters.")
+    except ValidationException:
+        pass
+    else:
+        pytest.fail("ValidationException not raised")
 
-    with pytest.raises(ValueError):
+    try:
         raise ValidationException("Must behave as a ValueError.")
+    except ValueError:
+        pass
+    else:
+        pytest.fail("ValidationException not caught as ValueError")
 
     # 2. CryptoAttestationException
-    with pytest.raises(CryptoAttestationException):
+    try:
         raise CryptoAttestationException("Invalid signature.")
+    except CryptoAttestationException:
+        pass
+    else:
+        pytest.fail("CryptoAttestationException not raised")
 
-    with pytest.raises(ValueError):
+    try:
         raise CryptoAttestationException("Must behave as a ValueError.")
+    except ValueError:
+        pass
+    else:
+        pytest.fail("CryptoAttestationException not caught as ValueError")
 
     # 3. EscalationBlockedException
-    with pytest.raises(EscalationBlockedException):
+    try:
         raise EscalationBlockedException("Agent is blocked.")
+    except EscalationBlockedException:
+        pass
+    else:
+        pytest.fail("EscalationBlockedException not raised")
 
-    with pytest.raises(RuntimeError):
+    try:
         raise EscalationBlockedException("Must behave as a RuntimeError.")
+    except RuntimeError:
+        pass
+    else:
+        pytest.fail("EscalationBlockedException not caught as RuntimeError")
