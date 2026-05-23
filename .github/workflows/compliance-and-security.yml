@@ -48,11 +48,12 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || github.event.merge_group.base_ref || 'main' }}
         run: |
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            git fetch origin "$BASE_REF"
-            commits=$(git log origin/"$BASE_REF"..HEAD --since="2026-05-20" --no-merges --format="%H")
+          CLEAN_BASE_REF="${BASE_REF#refs/heads/}"
+          if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "merge_group" ]; then
+            git fetch origin "$CLEAN_BASE_REF"
+            commits=$(git log origin/"$CLEAN_BASE_REF"..HEAD --since="2026-05-20" --no-merges --format="%H")
           else
             commits=$(git log -5 --no-merges --format="%H")
           fi
