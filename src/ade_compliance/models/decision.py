@@ -1,27 +1,53 @@
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field
+import uuid
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, model_validator
+
 
 class Decision(BaseModel):
     axiom_id: str
     rationale: str
     criticality: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
     @property
     def requires_human_review(self) -> bool:
         return self.criticality in ["high", "critical"]
 
-class Override(Decision):
-    expires_in_days: int = 90
-    scope: Optional[str] = None
-    
+
+class Override(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    axiom_id: str
+    scope_type: str  # FILE | DIRECTORY | COMPONENT
+    scope_value: str
+    rationale: str
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    expires_at: datetime
+    is_permanent: bool = False
+    permanent_justification: Optional[str] = None
+    revoked_at: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def validate_permanent(self) -> "Override":
+        if self.is_permanent and not self.permanent_justification:
+            raise ValueError("permanent_justification is required when is_permanent is True")
+        return self
+
     @property
     def is_active(self) -> bool:
-        return True
+        if self.revoked_at is not None:
+            return False
+        if self.is_permanent:
+            return True
+        return datetime.now(timezone.utc).replace(tzinfo=None) < self.expires_at
+
 
 class Attestation(BaseModel):
     agent_id: str
     task_id: str
     confidence: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    axioms_applied: List[str] = []
+    status: str = "pending"  # pending | passed | failed | escalated
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

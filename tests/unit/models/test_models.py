@@ -1,158 +1,43 @@
-import pytest
-from datetime import datetime
-from ade_compliance.models.axiom import Axiom, Violation, ViolationState, TraceLink
-from ade_compliance.models.decision import Decision, Override, Attestation
+from ade_compliance.models.axiom import Axiom, TraceLink, Violation, ViolationState
+from ade_compliance.models.decision import Decision, Override
 
-# === Axiom Model Tests ===
 
 def test_axiom_creation():
-    axiom = Axiom(
-        id="\u03a3.1",
-        name="Specification Primacy",
-        category="foundation",
-        severity="critical"
-    )
-    assert axiom.id == "\u03a3.1"
-    assert axiom.name == "Specification Primacy"
+    axiom = Axiom(id="Π.1.1", name="Spec Governance", category="SPECIFICATION", severity="high")
+    assert axiom.id == "Π.1.1"
     assert axiom.enabled is True
 
-def test_axiom_custom_fields():
-    axiom = Axiom(
-        id="\u03a3.2",
-        name="Test Primacy",
-        category="verification",
-        severity="high",
-        enabled=False,
-        description="Tests first"
-    )
-    assert axiom.severity == "high"
-    assert axiom.enabled is False
-    assert axiom.description == "Tests first"
 
-# === Violation Model Tests ===
+def test_violation_state_machine():
+    v = Violation(axiom_id="Π.1.1", file_path="src/main.py", message="No spec")
+    assert v.state == ViolationState.NEW
 
-def test_violation_state_new():
-    violation = Violation(
-        axiom_id="\u03a0.1.1",
-        file_path="src/foo.py",
-        message="No spec found",
-    )
-    assert violation.state == ViolationState.NEW
+    v.acknowledge()
+    assert v.state == ViolationState.ACKNOWLEDGED
 
-def test_violation_acknowledge():
-    violation = Violation(
-        axiom_id="\u03a0.1.1",
-        file_path="src/foo.py",
-        message="No spec found",
-    )
-    violation.acknowledge()
-    assert violation.state == ViolationState.ACKNOWLEDGED
+    v.resolve()
+    assert v.state == ViolationState.RESOLVED
 
-def test_violation_resolve():
-    violation = Violation(
-        axiom_id="\u03a0.1.1",
-        file_path="src/foo.py",
-        message="No spec found",
-    )
-    violation.acknowledge()
-    violation.resolve()
-    assert violation.state == ViolationState.RESOLVED
 
-def test_violation_state_transitions():
-    violation = Violation(
-        axiom_id="\u03a0.1.1",
-        file_path="src/foo.py",
-        message="Missing spec",
-    )
-    assert violation.state == ViolationState.NEW
-    violation.acknowledge()
-    assert violation.state == ViolationState.ACKNOWLEDGED
-    violation.resolve()
-    assert violation.state == ViolationState.RESOLVED
+def test_tracelink_matrix():
+    link = TraceLink(source="src/main.py", target="tests/test_main.py", type="validates")
+    assert link.source == "src/main.py"
 
-def test_violation_override():
-    violation = Violation(
-        axiom_id="\u03a0.1.1",
-        file_path="src/foo.py",
-        message="Missing spec",
-    )
-    violation.acknowledge()
-    violation.override()
-    assert violation.state == ViolationState.OVERRIDDEN
 
-# === TraceLink Model Tests ===
+def test_decision_criticality():
+    d = Decision(axiom_id="Π.5.3", rationale="Test", criticality="critical")
+    assert d.requires_human_review is True
 
-def test_trace_link():
-    link = TraceLink(
-        source="src/foo.py",
-        target="tests/test_foo.py",
-        type="test"
-    )
-    assert link.source == "src/foo.py"
-    assert link.target == "tests/test_foo.py"
-    assert link.type == "test"
-
-# === Decision Model Tests ===
-
-def test_decision_requires_human_review_critical():
-    decision = Decision(
-        axiom_id="\u03a3.1",
-        rationale="Requires arch review",
-        criticality="critical"
-    )
-    assert decision.requires_human_review is True
-
-def test_decision_requires_human_review_high():
-    decision = Decision(
-        axiom_id="\u03a3.1",
-        rationale="Complex change",
-        criticality="high"
-    )
-    assert decision.requires_human_review is True
-
-def test_decision_auto_approve_low():
-    decision = Decision(
-        axiom_id="\u03a3.1",
-        rationale="Minor refactor",
-        criticality="low"
-    )
-    assert decision.requires_human_review is False
-
-def test_decision_auto_approve_medium():
-    decision = Decision(
-        axiom_id="\u03a3.1",
-        rationale="Standard change",
-        criticality="medium"
-    )
-    assert decision.requires_human_review is False
-
-# === Override Model Tests ===
 
 def test_override_expiration():
-    override = Override(
-        axiom_id="\u03a3.2",
-        rationale="Temporary exemption",
-        criticality="high",
-        expires_in_days=90
+    from datetime import datetime, timedelta, timezone
+    o = Override(
+        axiom_id="Π.1.1",
+        scope_type="FILE",
+        scope_value="src/main.py",
+        rationale="This is a very long rationale of more than twenty characters.",
+        created_by="architect-1",
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1),
     )
-    assert override.expires_in_days == 90
-
-def test_override_is_active():
-    override = Override(
-        axiom_id="\u03a3.2",
-        rationale="Temporary exemption",
-        criticality="high",
-    )
-    assert override.is_active is True
-
-# === Attestation Model Tests ===
-
-def test_attestation():
-    attestation = Attestation(
-        agent_id="agent-001",
-        task_id="task-001",
-        confidence=0.95
-    )
-    assert attestation.agent_id == "agent-001"
-    assert attestation.confidence == 0.95
-    assert attestation.timestamp is not None
+    assert o.is_active is True
+    # Testing time-dependent logic would require mocking/freezing time

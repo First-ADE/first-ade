@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 class ViolationState(str, Enum):
     NEW = "new"
@@ -9,10 +11,12 @@ class ViolationState(str, Enum):
     RESOLVED = "resolved"
     OVERRIDDEN = "overridden"
 
+
 class TraceLink(BaseModel):
     source: str
     target: str
     type: str
+
 
 class Axiom(BaseModel):
     id: str
@@ -22,18 +26,20 @@ class Axiom(BaseModel):
     enabled: bool = True
     description: Optional[str] = None
 
+
 class Violation(BaseModel):
     axiom_id: str
     file_path: str
     message: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    severity: str = "medium"
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     state: ViolationState = ViolationState.NEW
-    
+
     def acknowledge(self):
         self.state = ViolationState.ACKNOWLEDGED
-        
+
     def resolve(self):
         self.state = ViolationState.RESOLVED
-        
+
     def override(self):
         self.state = ViolationState.OVERRIDDEN

@@ -42,7 +42,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ComplianceReport"
         "503":
-          description: Internal failure - fail-closed, check could not complete
+          description: Internal failure — fail-closed, check could not complete
 
   /check/spec:
     post:
@@ -139,7 +139,7 @@ paths:
 
   /overrides:
     post:
-      summary: Create override (FR-021, FR-029) - Human Architect only
+      summary: Create override (FR-021, FR-029) — Human Architect only
       operationId: createOverride
       requestBody:
         required: true
