@@ -2,20 +2,19 @@
 
 Provides violating rule exception overrides with scope matching, rationale validation,
 audit trail logging, and local SQLite DB storage.
+Consolidates engine setup using the centralized database manager.
 """
 
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from sqlalchemy import Boolean, Column, DateTime, String, create_engine, text
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Boolean, Column, DateTime, String
 
 from ..config import Config
 from ..models.decision import Override
 from ..services.audit import AuditService
-
-Base = declarative_base()
+from .db import Base, db_session
 
 
 class OverrideEntry(Base):
@@ -39,32 +38,23 @@ class OverrideService:
     def __init__(self, config: Config):
         self.config = config
         self.audit = AuditService(config)
-        self.db_path = config.global_settings.audit_path
         
-        if self.db_path == ":memory:" or not self.db_path:
-            url = "sqlite://"
-        else:
-            path = self.db_path.replace("\\", "/")
-            url = f"sqlite:///{path}"
-            
-            # ensure dir exists
-            import pathlib
-            p = pathlib.Path(self.db_path)
-            if p.parent and not p.parent.exists():
-                p.parent.mkdir(parents=True, exist_ok=True)
+        from sqlalchemy.orm import sessionmaker
 
-        self.engine = create_engine(url)
-        Base.metadata.create_all(self.engine)
+        from .db import Base as db_Base
+        from .db import get_engine
+        self.engine = get_engine(config)
+        db_Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
         
-        # Self-healing migration for existing databases adding the expiry_notified column
+        # Self-healing migration for legacy databases to insert columns if not present
         try:
+            from sqlalchemy import text
             with self.engine.connect() as conn:
                 conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
                 conn.commit()
         except Exception:
             pass
-
-        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def create_override(
         self,
@@ -77,21 +67,7 @@ class OverrideService:
         is_permanent: bool = False,
         permanent_justification: str = "",
     ) -> Override:
-        """Create and persist a violation override.
-        
-        Args:
-            axiom_id: Violation rule to override.
-            scope_type: FILE | DIRECTORY | COMPONENT.
-            scope_value: Target path or component name.
-            rationale: Explanation (min 20 characters).
-            created_by: Human Architect SSO ID.
-            expires_in_days: Validity duration.
-            is_permanent: Permanent bypass toggle.
-            permanent_justification: Elevated context for permanent overrides.
-            
-        Returns:
-            The created Override model.
-        """
+        """Create and persist a violation override."""
         # Validate constraints
         if len(rationale) < 20:
             raise ValueError("Rationale must be at least 20 characters long.")
@@ -114,12 +90,10 @@ class OverrideService:
             permanent_justification=permanent_justification if is_permanent else None,
         )
 
-        session = self.Session()
-        try:
+        with db_session(self.config) as session:
             session.add(entry)
-            session.commit()
-        finally:
-            session.close()
+            # Fetch created_at populated by DB default
+            created_at = entry.created_at or datetime.now(timezone.utc).replace(tzinfo=None)
 
         # Log to audit trail
         self.audit.log(
@@ -144,7 +118,7 @@ class OverrideService:
             scope_value=scope_value,
             rationale=rationale,
             created_by=created_by,
-            created_at=entry.created_at,
+            created_at=created_at,
             expires_at=expires_at,
             is_permanent=is_permanent,
             permanent_justification=permanent_justification if is_permanent else None,
@@ -152,8 +126,7 @@ class OverrideService:
 
     def get_active_overrides(self) -> List[Override]:
         """Retrieve all currently active (non-expired and non-revoked) overrides."""
-        session = self.Session()
-        try:
+        with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             entries = session.query(OverrideEntry).filter(
                 OverrideEntry.revoked_at == None
@@ -179,8 +152,6 @@ class OverrideService:
                         )
                     )
             return active
-        finally:
-            session.close()
 
     def is_override_active(self, axiom_id: str, file_path: str) -> bool:
         """Check if an active override covers this axiom ID and file path."""
@@ -204,32 +175,27 @@ class OverrideService:
 
     def revoke_override(self, override_id: str) -> bool:
         """Manually revoke a compliance override."""
-        session = self.Session()
-        try:
+        with db_session(self.config) as session:
             entry = session.query(OverrideEntry).filter(OverrideEntry.id == override_id).first()
             if not entry:
                 return False
 
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             entry.revoked_at = now
-            session.commit()
             
-            # Log to audit trail
-            self.audit.log(
-                "OVERRIDE_REVOKED",
-                {
-                    "id": override_id,
-                    "revoked_at": now.isoformat(),
-                },
-            )
-            return True
-        finally:
-            session.close()
+        # Log to audit trail
+        self.audit.log(
+            "OVERRIDE_REVOKED",
+            {
+                "id": override_id,
+                "revoked_at": now.isoformat(),
+            },
+        )
+        return True
 
     def check_expiring_overrides(self) -> List[Override]:
         """Check for active overrides expiring in <= 7 days and notify via EscalationService."""
-        session = self.Session()
-        try:
+        with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             seven_days_from_now = now + timedelta(days=7)
             
@@ -291,8 +257,5 @@ class OverrideService:
                             executor.submit(lambda: asyncio.run(escalation_service.escalate(title, body))).result()
                     else:
                         asyncio.run(escalation_service.escalate(title, body))
-                
-                session.commit()
+                        
             return expiring
-        finally:
-            session.close()
