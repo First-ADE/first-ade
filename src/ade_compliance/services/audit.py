@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 from sqlalchemy import Column, DateTime, Integer, String, create_engine
@@ -16,7 +16,7 @@ class AuditEntry(Base):
     __tablename__ = "audit_log"
 
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     action = Column(String)
     details = Column(String)  # JSON
     previous_hash = Column(String)
@@ -57,7 +57,7 @@ class AuditService:
             details_json = json.dumps(details, sort_keys=True)
 
             # Calculate new hash
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
             payload = f"{timestamp.isoformat()}{action}{details_json}{prev_hash}"
             entry_hash = hashlib.sha256(payload.encode()).hexdigest()
 
@@ -89,7 +89,7 @@ class AuditService:
         """Aggregate compliance metrics and trends over the last specified number of days."""
         session = self.Session()
         try:
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
             entries = session.query(AuditEntry).filter(AuditEntry.timestamp >= cutoff).all()
 
             runs_count = 0

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -8,7 +8,7 @@ from .axiom import Violation
 
 class ComplianceReport(BaseModel):
     schema_version: str = Field(default="1.0.0", alias="version")
-    generated_at: datetime = Field(default_factory=datetime.utcnow, alias="timestamp")
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), alias="timestamp")
     repo_root: str
     commit_sha: Optional[str] = None
     check_duration_ms: int = 0

@@ -5,7 +5,7 @@ audit trail logging, and local SQLite DB storage.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from sqlalchemy import Boolean, Column, DateTime, String, create_engine, text
@@ -27,7 +27,7 @@ class OverrideEntry(Base):
     scope_value = Column(String, nullable=False)
     rationale = Column(String, nullable=False)
     created_by = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     expires_at = Column(DateTime, nullable=False)
     is_permanent = Column(Boolean, default=False)
     permanent_justification = Column(String, nullable=True)
@@ -99,7 +99,7 @@ class OverrideService:
         if is_permanent and not permanent_justification:
             raise ValueError("permanent_justification is required when is_permanent is True")
 
-        expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
+        expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=expires_in_days)
         override_id = str(uuid.uuid4())
 
         entry = OverrideEntry(
@@ -154,7 +154,7 @@ class OverrideService:
         """Retrieve all currently active (non-expired and non-revoked) overrides."""
         session = self.Session()
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             entries = session.query(OverrideEntry).filter(
                 OverrideEntry.revoked_at == None
             ).all()
@@ -210,7 +210,7 @@ class OverrideService:
             if not entry:
                 return False
 
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             entry.revoked_at = now
             session.commit()
             
@@ -230,7 +230,7 @@ class OverrideService:
         """Check for active overrides expiring in <= 7 days and notify via EscalationService."""
         session = self.Session()
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             seven_days_from_now = now + timedelta(days=7)
             
             # Query non-permanent overrides expiring within 7 days that haven't been notified yet

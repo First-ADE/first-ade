@@ -45,7 +45,7 @@ class Orchestrator:
             all_violations.extend(violations)
 
         # Apply active overrides to violations
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         from ..models.axiom import ViolationState
         from ..services.override import OverrideService
@@ -54,7 +54,7 @@ class Orchestrator:
         for v in all_violations:
             if override_service.is_override_active(v.axiom_id, v.file_path):
                 v.state = ViolationState.OVERRIDDEN
-                v.resolved_at = datetime.utcnow()
+                v.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # Extract traceability links from all files to compile matrix
         traceability_matrix = {}

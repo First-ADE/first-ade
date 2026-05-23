@@ -30,14 +30,14 @@ def test_decision_criticality():
 
 
 def test_override_expiration():
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     o = Override(
         axiom_id="Π.1.1",
         scope_type="FILE",
         scope_value="src/main.py",
         rationale="This is a very long rationale of more than twenty characters.",
         created_by="architect-1",
-        expires_at=datetime.utcnow() + timedelta(days=1),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1),
     )
     assert o.is_active is True
     # Testing time-dependent logic would require mocking/freezing time
