@@ -1,0 +1,125 @@
+name: Main Branch Guardian
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */6 * * *' # Run every 6 hours
+
+jobs:
+  guard:
+    name: Run Guard Checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for revert capabilities
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: Run Guardian Test Suite
+        id: test_run
+        run: |
+          source .venv/bin/activate
+          # Run pytest and capture output to log file, also generating JUnit report
+          pytest --junitxml=report.xml > test_output.log 2>&1 || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          
+          # Output test log for visibility in GHA console
+          cat test_output.log
+          
+          # Check for warnings in the log
+          if grep -q "warning" test_output.log; then
+            echo "WARNINGS_FOUND=true" >> $GITHUB_ENV
+          fi
+          
+          # Check if 0 tests were collected (missing tests)
+          if grep -q "collected 0 items" test_output.log; then
+            echo "TESTS_MISSING=true" >> $GITHUB_ENV
+          fi
+
+      - name: Handle Warnings and Missing Tests
+        if: env.WARNINGS_FOUND == 'true' || env.TESTS_MISSING == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          WARNINGS_FOUND: ${{ env.WARNINGS_FOUND }}
+          TESTS_MISSING: ${{ env.TESTS_MISSING }}
+        run: |
+          TITLE="[Main Guard] Warnings or Missing Tests Detected on main"
+          if [ "$TESTS_MISSING" = "true" ]; then
+            TITLE="[Main Guard] CRITICAL: No tests found or collected on main branch!"
+          fi
+          
+          BODY="### Guardian Report
+          - **Warnings Found**: $WARNINGS_FOUND
+          - **Tests Missing (0 Collected)**: $TESTS_MISSING
+          
+          Please inspect the workflow log for details."
+          
+          echo "Filing issue: $TITLE"
+          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/issues \
+            -d "{\"title\":\"$TITLE\",\"body\":\"$BODY\",\"labels\":[\"main-guard\",\"warning\"]}"
+
+      - name: Handle Failing Checks and Revert PR
+        if: env.TESTS_FAILED == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "::error::Guard checks failed on main branch! Triggering automated alert and revert..."
+          
+          # 1. File a critical failure issue
+          TITLE="[Main Guard] [CRITICAL] Test Suite Failure on main Branch - Auto-Revert Triggered"
+          BODY="### CRITICAL ALARM
+          The automated test suite has failed on the \`main\` branch. 
+          An automatic revert has been initiated for the last commit: \`${{ github.sha }}\`.
+          
+          #### Build Details
+          - **Workflow Run**: https://github.com/$REPO/actions/runs/${{ github.run_id }}
+          - **Failing Commit**: ${{ github.sha }}
+          - **Author**: ${{ github.event.head_commit.author.username || github.actor }}
+          - **Commit Message**: ${{ github.event.head_commit.message }}"
+          
+          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/issues \
+            -d "{\"title\":\"$TITLE\",\"body\":\"$BODY\",\"labels\":[\"main-guard\",\"critical\",\"incident\"]}"
+            
+          # 2. Automatically Revert the last merge commit (only if push event)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "Reverting commit ${{ github.sha }}..."
+            git config --global user.name "GitHub Actions Bot"
+            git config --global user.email "actions@github.com"
+            
+            # Revert the merge commit (m 1 targets the first parent, which restores main state)
+            git revert -m 1 HEAD --no-edit || git revert HEAD --no-edit
+            
+            # Push the revert directly back to main
+            # Using GITHUB_TOKEN authentication in the remote URL
+            git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/$REPO.git
+            git push origin main
+            echo "Revert pushed successfully!"
+          else
+            echo "Schedule event: Revert skipped (not a direct push/merge)."
+          fi
+          
+          # Fail the build
+          exit 1
