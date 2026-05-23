@@ -70,29 +70,21 @@ def normalize_project_path(file_path: str) -> str:
     - "src/main.py" -> "src/main.py"
     """
     try:
-        # Convert path to resolved absolute path first to handle all absolute/relative nuances
-        p = Path(file_path).resolve()
-        cwd = Path(".").resolve()
-
-        # If it is inside current directory, make it relative to cwd
-        try:
-            rel = p.relative_to(cwd)
-            return str(rel).replace("\\", "/").strip("/")
-        except ValueError:
-            # Not relative to current directory, fallback to standard normalization
-            pass
+        # String-based path normalization without hitting the filesystem (CodeQL mitigation)
+        normalized = os.path.normpath(file_path).replace("\\", "/")
+        cwd_str = os.path.abspath(".").replace("\\", "/")
+        abs_path = os.path.abspath(file_path).replace("\\", "/")
+        if abs_path.startswith(cwd_str + "/"):
+            return abs_path[len(cwd_str) + 1 :].strip("/")
+        elif abs_path == cwd_str:
+            return ""
+        return normalized.strip("/")
     except Exception:
         # Avoid empty except block by returning standard fallback directly
         normalized = str(file_path).replace("\\", "/").strip("/")
         if normalized.startswith("./"):
             normalized = normalized[2:]
         return normalized
-
-    # Standard fallback normalization
-    normalized = str(file_path).replace("\\", "/").strip("/")
-    if normalized.startswith("./"):
-        normalized = normalized[2:]
-    return normalized
 
 
 @contextmanager
