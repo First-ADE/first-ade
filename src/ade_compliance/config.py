@@ -29,11 +29,20 @@ class Engines(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+class EscalationConfig(BaseModel):
+    github_repo: str = "First-ADE/first-ade"
+    retry_max: int = 5
+    retry_timeout_minutes: int = 15
+
+    model_config = {"extra": "ignore"}
+
+
 class Config(BaseModel):
     global_settings: GlobalSettings = Field(default_factory=GlobalSettings, alias="global")
     engines: Engines = Field(default_factory=Engines)
+    escalation: EscalationConfig = EscalationConfig()
 
-    model_config = {"extra": "ignore"}
+    model_config = {"extra": "ignore", "populate_by_name": True}
 
 
 def load_config(path: Path = Path(".ade-compliance.yml")) -> Config:

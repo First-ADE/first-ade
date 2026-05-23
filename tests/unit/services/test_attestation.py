@@ -89,9 +89,12 @@ class TestRecordAttestation:
 
         entries = attestation_service.audit.get_entries()
         assert len(entries) >= 1
-        assert entries[0]["action"] == "ATTESTATION_RECORDED"
-        assert entries[0]["details"]["agent_id"] == "agent-1"
-        assert entries[0]["details"]["status"] == "passed"
+        actions = [e["action"] for e in entries]
+        assert "ATTESTATION_RECORDED" in actions
+        
+        attest_entry = next(e for e in entries if e["action"] == "ATTESTATION_RECORDED")
+        assert attest_entry["details"]["agent_id"] == "agent-1"
+        assert attest_entry["details"]["status"] == "passed"
 
     def test_escalation_logs_escalation_entry(self, attestation_service):
         """Low-confidence attestation should log an additional ESCALATION_TRIGGERED entry."""
