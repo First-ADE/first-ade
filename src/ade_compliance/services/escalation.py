@@ -10,7 +10,7 @@ Provides:
 
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
@@ -30,9 +30,9 @@ class QueuedEscalation(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     body = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     retry_count = Column(Integer, default=0)
-    next_retry = Column(DateTime, default=datetime.utcnow)
+    next_retry = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_blocked = Column(Boolean, default=False)
     error_message = Column(String, nullable=True)
 
@@ -149,7 +149,7 @@ class EscalationService:
         # Queue locally
         session = self.Session()
         try:
-            next_retry = datetime.utcnow() + timedelta(minutes=1)  # first retry in 1 minute
+            next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=1)  # first retry in 1 minute
             entry = QueuedEscalation(
                 title=title,
                 body=body,
@@ -189,7 +189,7 @@ class EscalationService:
         """Process any pending local queued escalations with exponential backoff."""
         session = self.Session()
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
             pending = session.query(QueuedEscalation).filter(
                 QueuedEscalation.is_blocked == False,
                 QueuedEscalation.next_retry <= now
@@ -211,7 +211,7 @@ class EscalationService:
                         )
                     else:
                         minutes = self.backoff_factor ** item.retry_count
-                        item.next_retry = datetime.utcnow() + timedelta(minutes=minutes)
+                        item.next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=minutes)
                         self.audit.log(
                             "ESCALATION_RETRY_SCHEDULED",
                             {

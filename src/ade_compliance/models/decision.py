@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, model_validator
@@ -9,7 +9,7 @@ class Decision(BaseModel):
     axiom_id: str
     rationale: str
     criticality: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     @property
     def requires_human_review(self) -> bool:
@@ -23,7 +23,7 @@ class Override(BaseModel):
     scope_value: str
     rationale: str
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     expires_at: datetime
     is_permanent: bool = False
     permanent_justification: Optional[str] = None
@@ -41,7 +41,7 @@ class Override(BaseModel):
             return False
         if self.is_permanent:
             return True
-        return datetime.utcnow() < self.expires_at
+        return datetime.now(timezone.utc).replace(tzinfo=None) < self.expires_at
 
 
 class Attestation(BaseModel):
@@ -50,4 +50,4 @@ class Attestation(BaseModel):
     confidence: float
     axioms_applied: List[str] = []
     status: str = "pending"  # pending | passed | failed | escalated
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

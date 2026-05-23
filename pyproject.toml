@@ -90,3 +90,7 @@ markers = [
     "integration: Integration tests",
     "asyncio: Asyncio tests",
 ]
+filterwarnings = [
+    "error",
+    "ignore::pytest.PytestCollectionWarning",
+]

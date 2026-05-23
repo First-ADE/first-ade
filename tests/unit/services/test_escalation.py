@@ -5,7 +5,7 @@ local retry queuing with exponential backoff, fail-closed agent blocking, and Hu
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -107,7 +107,7 @@ class TestEscalationQueuingAndBlocking:
             assert item.title == "Test Title"
             assert item.retry_count == 0
             assert item.is_blocked is False
-            assert item.next_retry > datetime.utcnow()
+            assert item.next_retry > datetime.now(timezone.utc).replace(tzinfo=None)
             session.close()
 
     @pytest.mark.asyncio
@@ -119,7 +119,7 @@ class TestEscalationQueuingAndBlocking:
             title="Queued Title",
             body="Queued Body",
             retry_count=0,
-            next_retry=datetime.utcnow() - timedelta(seconds=10)
+            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
         )
         session.add(entry)
         session.commit()
@@ -135,7 +135,7 @@ class TestEscalationQueuingAndBlocking:
         item = session.query(QueuedEscalation).first()
         assert item.retry_count == 1
         # Backoff: 2^1 minutes = 2 minutes in future
-        assert item.next_retry > datetime.utcnow() + timedelta(minutes=1)
+        assert item.next_retry > datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=1)
         assert item.is_blocked is False
         session.close()
 
@@ -147,7 +147,7 @@ class TestEscalationQueuingAndBlocking:
             title="Persistent Fail",
             body="Body content",
             retry_count=escalation_service.retry_max - 1, # Next failure reaches retry_max
-            next_retry=datetime.utcnow() - timedelta(seconds=10)
+            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
         )
         session.add(entry)
         session.commit()
