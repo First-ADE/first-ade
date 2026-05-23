@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First ADE - Level 2: Methodology</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .page-header {
+            padding: calc(var(--spacing-2xl) + 2rem) 0 var(--spacing-xl);
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, rgba(15, 23, 42, 0) 100%);
+            position: relative;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            transition: color var(--transition-fast);
+        }
+        .back-btn:hover {
+            color: var(--primary);
+        }
+        .timeline-section {
+            position: relative;
+            padding: var(--spacing-2xl) 0;
+        }
+        .methodology-timeline::before {
+            background: linear-gradient(to bottom, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+        }
+        .phase-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+        .phase-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-xl), var(--shadow-glow);
+        }
+        .phase-badge {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            margin-bottom: var(--spacing-sm);
+        }
+        .output-tag {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-mono);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="logo-symbol">Σ</span>
+                <span class="logo-text">First ADE</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="learn-foundations.html" class="nav-link">Foundations</a>
+                <a href="learn-methodology.html" class="nav-link active">Methodology</a>
+                <a href="learn-practice.html" class="nav-link">Practice</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <a href="index.html" class="back-btn">← Back to Dashboard</a>
+            <span class="section-badge">Level 2: Methodology</span>
+            <h1 class="gradient-text">The 7-Phase Workflow</h1>
+            <p class="lead">From absolute specifications to verified compliance. Explore the rigorous development lifecycle that governs every project build cycle.</p>
+        </div>
+    </div>
+
+    <!-- Timeline Grid Section -->
+    <section class="container timeline-section">
+        <div class="methodology-timeline">
+            <!-- Phase 1 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 1</span>
+                        <h3 class="phase-title">Specify (Π.1.1)</h3>
+                        <p class="phase-question"><em>"What are we building, and why does it matter?"</em></p>
+                        <p class="phase-description">Before writing code, we write behavioral specifications. We define user scenarios, outline requirements, and list all technical constraints. The specification is written in standard markdown format under `specs/` or as a `specs.md` file.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">spec.md</span>
+                                <span class="output-tag">User Stories</span>
+                                <span class="output-tag">Acceptance Criteria</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">📝</div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 2</span>
+                        <h3 class="phase-title">Clarify (Π.1.1a)</h3>
+                        <p class="phase-question"><em>"Are there any gaps or ambiguities in our intent?"</em></p>
+                        <p class="phase-description">If the system specification is ambiguous, the program cannot be verified. We perform clarification cycles to address gaps, list questions, and confirm requirements with stakeholders, locking down the specification contract.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">Clarification Q&A</span>
+                                <span class="output-tag">Locked spec.md</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">💬</div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 3</span>
+                        <h3 class="phase-title">Plan (Π.3.1, Π.4.1)</h3>
+                        <p class="phase-question"><em>"How do we decompose our specification into architecture?"</em></p>
+                        <p class="phase-description">We design the module architecture, choose database and external integrations, establish APIs, and document all significant decisions in Architecture Decision Records (ADRs). ADRs must strictly trace back to axioms.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">plan.md</span>
+                                <span class="output-tag">ADRs (docs/decisions/)</span>
+                                <span class="output-tag">API Contracts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">🗺️</div>
+            </div>
+
+            <!-- Phase 4 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 4</span>
+                        <h3 class="phase-title">Tasks (Π.1.2a)</h3>
+                        <p class="phase-question"><em>"What is the optimal path to build the system?"</em></p>
+                        <p class="phase-description">We decompose our plan into small, atomic tasks, organizing them logically in a `tasks.md` checklist. We define strict dependencies, building from the foundation (infrastructure/models) upward to services and endpoints.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">tasks.md</span>
+                                <span class="output-tag">Dependency Trees</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">📋</div>
+            </div>
+
+            <!-- Phase 5 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 5</span>
+                        <h3 class="phase-title">Implement (Π.2.1, Π.2.2)</h3>
+                        <p class="phase-question"><em>"Write clean, deterministic, test-aligned code."</em></p>
+                        <p class="phase-description">We implement features following a Test-Driven Development (TDD) cycle. We write failing unit/integration tests matching the specification requirements, write code that implements the feature to pass tests, and refactor for quality.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">Source Code</span>
+                                <span class="output-tag">Unit & Integration Tests</span>
+                                <span class="output-tag">Atomic Commits</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">💻</div>
+            </div>
+
+            <!-- Phase 6 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 6</span>
+                        <h3 class="phase-title">Verify (Π.5.1b)</h3>
+                        <p class="phase-question"><em>"Does our code strictly satisfy the spec.md contracts?"</em></p>
+                        <p class="phase-description">We run local compliance checks using the `ade-compliance` engine. We check if specifications exist, if all files have deterministic tests, and if all implementation files have traceability comments that link to specs and axioms.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">ade-compliance Report</span>
+                                <span class="output-tag">Test Coverage Matrix</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">🧪</div>
+            </div>
+
+            <!-- Phase 7 -->
+            <div class="phase-item">
+                <div class="phase-content">
+                    <div class="phase-card">
+                        <span class="phase-badge">Phase 7</span>
+                        <h3 class="phase-title">Analyze (Π.3.1)</h3>
+                        <p class="phase-question"><em>"How can we optimize our principles and workflow?"</em></p>
+                        <p class="phase-description">A post-implementation retrospective. We evaluate any compliance failures, calculate human review rates, verify audit chain logs, and update our organizational templates to refine future development iterations.</p>
+                        <div class="phase-outputs" style="margin-top: 1rem;">
+                            <h4 style="margin-bottom: var(--spacing-xs); font-size: 0.9rem;">Key Outputs:</h4>
+                            <div>
+                                <span class="output-tag">Post-Mortem / Retro</span>
+                                <span class="output-tag">Knowledge Updates</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-visual" style="display: flex; align-items: center; justify-content: center; font-size: 4rem;">📊</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 First ADE. Open source under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

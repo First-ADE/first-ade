@@ -1,3 +1,6 @@
+# implements: FR-007
+# traces_to: Π.3.1
+
 """Centralized Database Connection and Session Provider for ADE Compliance.
 
 Provides a unified SQLAlchemy engine, a shared declarative Base,

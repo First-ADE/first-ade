@@ -1,3 +1,6 @@
+# implements: FR-026
+# traces_to: Π.3.1
+
 """T064: Prometheus-compatible metrics for observability (FR-026).
 
 Exposes counters and histograms for compliance checks, attestations,
