@@ -162,14 +162,14 @@
 
 ### Tests for US-4
 
-- [ ] T037 [P] [US4] Unit tests for trace engine (markers present → pass, missing → fail, matrix generation) in tests/unit/engines/test_trace_engine.py
+- [x] T037 [P] [US4] Unit tests for trace engine (markers present → pass, missing → fail, matrix generation) in tests/unit/engines/test_trace_engine.py
 
 ### Implementation for US-4
 
-- [ ] T038 [US4] Implement Tree-sitter parser wrappers for Python, TypeScript, JavaScript, Java in src/ade_compliance/engines/trace_engine.py
-- [ ] T039 [US4] Implement traceability link extraction from AST (comments, decorators, docstrings) in src/ade_compliance/engines/trace_engine.py
-- [ ] T040 [US4] Implement traceability matrix generation (code→tests→requirements→axioms) in src/ade_compliance/engines/trace_engine.py
-- [ ] T041 [US4] Add AST cache by file hash for performance in src/ade_compliance/engines/trace_engine.py
+- [x] T038 [US4] Implement Tree-sitter parser wrappers for Python, TypeScript, JavaScript, Java in src/ade_compliance/engines/trace_engine.py
+- [x] T039 [US4] Implement traceability link extraction from AST (comments, decorators, docstrings) in src/ade_compliance/engines/trace_engine.py
+- [x] T040 [US4] Implement traceability matrix generation (code→tests→requirements→axioms) in src/ade_compliance/engines/trace_engine.py
+- [x] T041 [US4] Add AST cache by file hash for performance in src/ade_compliance/engines/trace_engine.py
 
 **Checkpoint**: Traceability validation works independently across 4 languages
 
@@ -234,7 +234,7 @@
 ### Implementation for US-7
 
 - [ ] T055 [US7] Implement `check-all` CLI command dispatching to orchestrator in src/ade_compliance/cli.py
-- [ ] T056 [US7] Implement `check-traceability` CLI command invoking trace engine in src/ade_compliance/cli.py
+- [x] T056 [US7] Implement `check-traceability` CLI command invoking trace engine in src/ade_compliance/cli.py
 - [ ] T057 [US7] Implement `generate-report` CLI command producing JSON compliance report in src/ade_compliance/cli.py
 - [ ] T058 [US7] Add CLI exit code semantics (0=pass, 1=violations, 2=internal error) in src/ade_compliance/cli.py
 
@@ -246,9 +246,9 @@
 
 **Purpose**: FR-005 — cross-cutting concern used by orchestrator
 
-- [ ] T067 [P] Unit tests for ADR engine in tests/unit/engines/test_adr_engine.py
-- [ ] T068 Implement ADR engine: detect architectural changes, verify ADR exists via `pyadr check-adr-repo` in src/ade_compliance/engines/adr_engine.py
-- [ ] T069 Register ADR engine in orchestrator dispatch in src/ade_compliance/services/orchestrator.py
+- [x] T067 [P] Unit tests for ADR engine in tests/unit/engines/test_adr_engine.py
+- [x] T068 Implement ADR engine: detect architectural changes, verify ADR exists via `pyadr check-adr-repo` in src/ade_compliance/engines/adr_engine.py
+- [x] T069 Register ADR engine in orchestrator dispatch in src/ade_compliance/services/orchestrator.py
 
 ---
 

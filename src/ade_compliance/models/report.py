@@ -12,6 +12,7 @@ class ComplianceReport(BaseModel):
     repo_root: str
     violations: List[Violation] = []
     summary: Dict[str, int] = {}
+    traceability_matrix: Dict[str, Dict[str, List[str]]] = {}
 
     def generate_summary(self):
         self.summary = {
