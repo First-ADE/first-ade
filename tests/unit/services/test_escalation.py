@@ -119,7 +119,7 @@ class TestEscalationQueuingAndBlocking:
             title="Queued Title",
             body="Queued Body",
             retry_count=0,
-            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
+            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10),
         )
         session.add(entry)
         session.commit()
@@ -146,8 +146,8 @@ class TestEscalationQueuingAndBlocking:
         entry = QueuedEscalation(
             title="Persistent Fail",
             body="Body content",
-            retry_count=escalation_service.retry_max - 1, # Next failure reaches retry_max
-            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
+            retry_count=escalation_service.retry_max - 1,  # Next failure reaches retry_max
+            next_retry=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10),
         )
         session.add(entry)
         session.commit()
@@ -206,7 +206,7 @@ class TestConsecutiveFailuresAndReviewRate:
         # Create low/medium decisions (auto-approved)
         dec_1 = Decision(axiom_id="Π.1.1", rationale="OK", criticality="low")
         dec_2 = Decision(axiom_id="Π.1.2", rationale="OK", criticality="medium")
-        
+
         # Create high decision (requires human review)
         dec_3 = Decision(axiom_id="Π.1.3", rationale="Review", criticality="high")
 

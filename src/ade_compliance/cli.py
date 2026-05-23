@@ -97,7 +97,6 @@ def main():
             pass
 
 
-
 @main.command()
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
@@ -198,7 +197,13 @@ def generate_report(paths: List[str], config: str):
 
 @main.command(name="override")
 @click.argument("axiom_id")
-@click.option("--scope-type", "-s", type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]), default="FILE", help="Override scope type")
+@click.option(
+    "--scope-type",
+    "-s",
+    type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]),
+    default="FILE",
+    help="Override scope type",
+)
 @click.option("--scope-value", "-v", required=True, help="File path, directory path, or component name")
 @click.option("--rationale", "-r", required=True, help="Rationale for the override (min 20 characters)")
 @click.option("--created-by", "-b", required=True, help="Architect SSO ID")
@@ -206,7 +211,9 @@ def generate_report(paths: List[str], config: str):
 @click.option("--permanent", is_flag=True, help="Make the override permanent")
 @click.option("--justification", "-j", default="", help="Permanent justification (required if permanent)")
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def override(axiom_id, scope_type, scope_value, rationale, created_by, expires_in_days, permanent, justification, config):
+def override(
+    axiom_id, scope_type, scope_value, rationale, created_by, expires_in_days, permanent, justification, config
+):
     """Create a compliance violation override."""
     if len(rationale) < 20:
         click.echo("Error: Rationale must be at least 20 characters long.", err=True)
@@ -217,6 +224,7 @@ def override(axiom_id, scope_type, scope_value, rationale, created_by, expires_i
 
     cfg = load_config(Path(config))
     from ade_compliance.services.override import OverrideService
+
     try:
         svc = OverrideService(cfg)
         res = svc.create_override(
@@ -256,4 +264,3 @@ def serve(host: str, port: int, config: str):
 
 if __name__ == "__main__":
     main()
-

@@ -103,7 +103,7 @@ class TestOverrideService:
             scope_value="src/expired.py",
             rationale="This is a very long rationale of more than twenty characters.",
             created_by="architect-1",
-            expires_in_days=-1, # Expired yesterday
+            expires_in_days=-1,  # Expired yesterday
         )
 
         # 3. Create a revoked override
