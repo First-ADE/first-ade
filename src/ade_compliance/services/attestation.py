@@ -69,7 +69,28 @@ class AttestationService:
             },
         )
 
-        # If escalated, log escalation event
+        # Safe async runner helper
+        def run_async_safe(coro):
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(lambda: asyncio.run(coro))
+                    return future.result()
+            else:
+                return asyncio.run(coro)
+
+        # If escalated, log escalation event and trigger EscalationService
+        from ..services.escalation import EscalationService
+        from ..models.decision import Decision
+        
+        escalation_service = EscalationService(self.config)
+
         if status == "escalated":
             self.audit.log(
                 "ESCALATION_TRIGGERED",
@@ -80,6 +101,39 @@ class AttestationService:
                     "reason": f"Confidence {confidence} below threshold {CONFIDENCE_THRESHOLD}",
                 },
             )
+            title = f"[ADE Escalation] Low-Confidence Attestation: Task {task_id}"
+            body = (
+                f"Agent attestation has low confidence and was escalated.\n\n"
+                f"- **Agent ID**: {agent_id}\n"
+                f"- **Task ID**: {task_id}\n"
+                f"- **Confidence**: {confidence}\n"
+                f"- **Axioms Applied**: {', '.join(axioms_applied)}\n"
+            )
+            try:
+                run_async_safe(escalation_service.escalate(title, body))
+            except Exception:
+                # Do not block if escalation is queued/blocked, or let it raise if blocked
+                if escalation_service.is_agent_blocked():
+                    raise
+
+        # Evaluate decision criticality for each applied axiom
+        for axiom_id in axioms_applied:
+            criticality = "medium"
+            if "critical" in axiom_id or axiom_id.startswith("Π.5"):
+                criticality = "critical"
+            elif "high" in axiom_id:
+                criticality = "high"
+
+            decision = Decision(
+                axiom_id=axiom_id,
+                rationale=f"Agent attested {axiom_id} during task {task_id}",
+                criticality=criticality,
+            )
+            try:
+                run_async_safe(escalation_service.evaluate_decision(decision))
+            except Exception:
+                if escalation_service.is_agent_blocked():
+                    raise
 
         return attestation
 
