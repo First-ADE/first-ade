@@ -20,13 +20,16 @@ def determine_exit_code(violations: List, config: Config) -> int:
     - 2: Warnings detected (no 'enforce', at least one 'warn' strictness)
     - 3: Internal framework error
     """
-    if not violations:
+    from ade_compliance.models.axiom import ViolationState
+
+    active_violations = [v for v in violations if v.state not in (ViolationState.OVERRIDDEN, ViolationState.RESOLVED)]
+    if not active_violations:
         return 0
 
     has_enforce = False
     has_warn = False
 
-    for v in violations:
+    for v in active_violations:
         axiom_id = v.axiom_id or ""
         strictness = get_axiom_strictness(config, axiom_id)
 

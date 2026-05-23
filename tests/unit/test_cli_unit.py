@@ -30,6 +30,10 @@ def test_cli_subcommands_registered():
         ([Violation(axiom_id="X.1", file_path="a.py", message="Err")], "warn", 2),
         # Violation with global_strictness enforce -> exit code 1
         ([Violation(axiom_id="X.1", file_path="a.py", message="Err")], "enforce", 1),
+        # Overridden violation -> exit code 0
+        ([Violation(axiom_id="X.1", file_path="a.py", message="Err", state="overridden")], "enforce", 0),
+        # Resolved violation -> exit code 0
+        ([Violation(axiom_id="X.1", file_path="a.py", message="Err", state="resolved")], "enforce", 0),
     ],
 )
 def test_determine_exit_code_fallback(violations, global_strictness, expected_code):

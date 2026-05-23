@@ -15,7 +15,7 @@ This is the internal member profile. Below you'll find resources and guidelines 
 | [POSTULATES](../docs/POSTULATES.md)     | Derived postulates (3 orders) |
 | [CONSTITUTION](../docs/CONSTITUTION.md) | Governance principles         |
 | [METHODOLOGY](../docs/METHODOLOGY.md)   | The ADE lifecycle             |
-| [ADR Guide](../docs/adr/adr-guide.md)   | How to write ADRs             |
+| [ADR Guide](../docs/adr-guide.md)   | How to write ADRs             |
 
 ---
 

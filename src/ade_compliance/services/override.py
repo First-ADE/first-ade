@@ -1,3 +1,6 @@
+# implements: FR-021
+# traces_to: Π.3.1
+
 """T051: Override service for compliance framework overrides.
 
 Provides violating rule exception overrides with scope matching, rationale validation,

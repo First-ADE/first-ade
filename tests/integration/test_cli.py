@@ -43,8 +43,8 @@ def test_cli_check_all_with_violations_warn():
         instance.run.side_effect = mock_run
 
         result = runner.invoke(main, ["check-all", "src/"])
-        # strictness defaults to warn, so exit code should be 2
-        assert result.exit_code == 2
+        # strictness defaults to enforce, so exit code should be 1
+        assert result.exit_code == 1
         assert "Violations: 1" in result.output
 
 
@@ -115,7 +115,7 @@ def test_cli_generate_report_outputs_json():
         instance.run.side_effect = mock_run
 
         result = runner.invoke(main, ["generate-report", "src/"])
-        assert result.exit_code == 2
+        assert result.exit_code == 1
 
         # Verify output is valid JSON
         data = json.loads(result.output)

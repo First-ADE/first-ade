@@ -18,7 +18,7 @@ from ade_compliance.config import (
 
 def test_default_config():
     config = Config()
-    assert config.global_settings.strictness == "warn"
+    assert config.global_settings.strictness == "enforce"
     assert config.engines.spec.enabled is True
 
 
@@ -141,7 +141,7 @@ def test_unknown_prefix_falls_to_global(cascading_config):
 def test_load_missing_file_returns_defaults(tmp_path):
     """Non-existent path returns default Config without error."""
     config = load_config(tmp_path / "nonexistent.yml")
-    assert config.global_settings.strictness == "warn"
+    assert config.global_settings.strictness == "enforce"
     assert config.engines.spec.enabled is True
 
 
@@ -178,7 +178,7 @@ def test_load_empty_yaml_returns_defaults(tmp_path):
     config_file.write_text("")
 
     config = load_config(config_file)
-    assert config.global_settings.strictness == "warn"
+    assert config.global_settings.strictness == "enforce"
 
 
 def test_load_config_error_does_not_leak_full_path(tmp_path):
