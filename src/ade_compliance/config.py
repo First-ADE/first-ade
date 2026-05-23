@@ -16,7 +16,7 @@ class ConfigError(Exception):
 
 
 class GlobalSettings(BaseModel):
-    strictness: StrictnessLevel = "warn"
+    strictness: StrictnessLevel = "enforce"
     enabled: bool = True
     audit_path: str = ".ade_compliance/audit.sqlite"
 
@@ -25,7 +25,7 @@ class GlobalSettings(BaseModel):
 
 class EngineConfig(BaseModel):
     enabled: bool = True
-    strictness: StrictnessLevel = "warn"
+    strictness: StrictnessLevel = "enforce"
     min_coverage: Optional[int] = None
 
     model_config = {"extra": "ignore"}

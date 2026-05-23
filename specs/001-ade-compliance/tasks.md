@@ -98,7 +98,7 @@
 ### Implementation for US-3
 
 - [x] T029 [US3] Implement test engine: detect test file existence, check test determinism (no external I/O, no sleep) in src/ade_compliance/engines/test_engine.py
-- [x] T030 [US3] Add configurable coverage threshold enforcement (default 80%, strictness: warn) in src/ade_compliance/engines/test_engine.py
+- [x] T030 [US3] Add configurable coverage threshold enforcement (default 80%, strictness: enforce) in src/ade_compliance/engines/test_engine.py
 
 **Checkpoint**: Test-first validation independently functional
 
