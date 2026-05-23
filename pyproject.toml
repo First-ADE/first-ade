@@ -50,6 +50,7 @@ ignore = [
     "B023", # Loop variable binding in function/lambda
     "F841", # Local variable assigned but unused
     "B904", # raise ... from err in except handler
+    "B008", # FastAPI Depends in function defaults
 ]
 # E: pycodestyle errors
 # F: Pyflakes
