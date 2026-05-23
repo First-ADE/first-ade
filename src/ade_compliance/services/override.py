@@ -130,7 +130,7 @@ class OverrideService:
         """Retrieve all currently active (non-expired and non-revoked) overrides."""
         with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
-            entries = session.query(OverrideEntry).filter(OverrideEntry.revoked_at == None).all()
+            entries = session.query(OverrideEntry).filter(OverrideEntry.revoked_at.is_(None)).all()
 
             active = []
             for e in entries:
@@ -203,7 +203,7 @@ class OverrideService:
             entries = (
                 session.query(OverrideEntry)
                 .filter(
-                    OverrideEntry.revoked_at == None,
+                    OverrideEntry.revoked_at.is_(None),
                     OverrideEntry.is_permanent == False,
                     OverrideEntry.expires_at <= seven_days_from_now,
                     OverrideEntry.expires_at >= now,
