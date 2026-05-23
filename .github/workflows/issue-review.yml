@@ -8,6 +8,8 @@ jobs:
   review-issue:
     name: Review Issue Completeness
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-generativeai requests
+          pip install google-generativeai==0.8.3 requests==2.32.3
 
       - name: Run Issue Reviewer Script
         env:
