@@ -1,7 +1,6 @@
 # implements: FR-002
 # traces_to: Π.2.1
 
-from pathlib import Path
 from ade_compliance.utils.path import sanitize_relative_path
 
 

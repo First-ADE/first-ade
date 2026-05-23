@@ -2,6 +2,7 @@
 # traces_to: Π.2.1
 
 import pytest
+
 from ade_compliance.config import Config
 from ade_compliance.services.orchestrator import Orchestrator
 
