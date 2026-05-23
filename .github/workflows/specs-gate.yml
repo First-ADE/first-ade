@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'specs/**'
+  merge_group:
+    paths:
+      - 'specs/**'
 
 permissions:
   contents: read
@@ -21,12 +24,13 @@ jobs:
       - name: Validate changed Spec-Kit folders
         shell: bash
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || github.event.merge_group.base_ref || 'main' }}
         run: |
+          CLEAN_BASE_REF="${BASE_REF#refs/heads/}"
           echo "Checking for changed directories under specs/..."
           
           # Get list of changed files under specs/
-          changed_files=$(git diff --name-only origin/"$BASE_REF"...HEAD | grep '^specs/' || true)
+          changed_files=$(git diff --name-only origin/"$CLEAN_BASE_REF"...HEAD | grep '^specs/' || true)
           
           if [ -z "$changed_files" ]; then
             echo "No specification files found in the pull request diff."
