@@ -40,6 +40,17 @@ class Orchestrator:
         for violations in results:
             all_violations.extend(violations)
 
+        # Apply active overrides to violations
+        from ..services.override import OverrideService
+        from ..models.axiom import ViolationState
+        from datetime import datetime
+        
+        override_service = OverrideService(self.config)
+        for v in all_violations:
+            if override_service.is_override_active(v.axiom_id, v.file_path):
+                v.state = ViolationState.OVERRIDDEN
+                v.resolved_at = datetime.utcnow()
+
         # Extract traceability links from all files to compile matrix
         traceability_matrix = {}
         if self.trace_engine:
@@ -57,6 +68,15 @@ class Orchestrator:
             traceability_matrix = self.trace_engine.generate_matrix(all_links)
 
         # Log findings
+        for v in all_violations:
+            self.audit.log(
+                "VIOLATION_DETECTED",
+                {
+                    "axiom_id": v.axiom_id,
+                    "severity": v.severity.value if hasattr(v.severity, "value") else str(v.severity),
+                    "file_path": v.file_path,
+                },
+            )
         self.audit.log("RUN_COMPLETE", {"violations_count": len(all_violations)})
 
         # Check consecutive failures (Π.5.3)

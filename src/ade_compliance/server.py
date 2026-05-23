@@ -65,6 +65,19 @@ class AttestResponse(BaseModel):
     timestamp: str
 
 
+class CreateOverrideRequest(BaseModel):
+    """Request body for POST /overrides."""
+
+    axiom_id: str
+    scope_type: str
+    scope_value: str
+    rationale: str
+    created_by: str
+    expires_in_days: int = 90
+    is_permanent: bool = False
+    permanent_justification: str = ""
+
+
 # --- App Factory ---
 
 
@@ -168,12 +181,66 @@ def create_app(
         """Get audit trail entries."""
         return attestation_service.audit.get_entries(limit=limit)
 
+    @app.get("/reports/trend")
+    def trend_report(days: int = Query(default=30, ge=1, le=365)):
+        """Get compliance trends over specified number of days."""
+        return attestation_service.audit.get_trend_report(days=days)
+
     # --- T063: Overrides Endpoint ---
 
+    from ade_compliance.services.override import OverrideService
+    override_service = OverrideService(config)
+
     @app.get("/overrides")
-    def overrides():
-        """List active overrides. (Stub — full implementation in US-6.)"""
-        return []
+    def get_overrides():
+        """List all currently active compliance overrides."""
+        active = override_service.get_active_overrides()
+        return [
+            {
+                "id": o.id,
+                "axiom_id": o.axiom_id,
+                "scope_type": o.scope_type,
+                "scope_value": o.scope_value,
+                "rationale": o.rationale,
+                "created_by": o.created_by,
+                "created_at": o.created_at.isoformat(),
+                "expires_at": o.expires_at.isoformat(),
+                "is_permanent": o.is_permanent,
+                "permanent_justification": o.permanent_justification,
+                "revoked_at": o.revoked_at.isoformat() if o.revoked_at else None,
+            }
+            for o in active
+        ]
+
+    @app.post("/overrides")
+    def create_override(request: CreateOverrideRequest):
+        """Create a new compliance override."""
+        from fastapi import HTTPException
+        try:
+            o = override_service.create_override(
+                axiom_id=request.axiom_id,
+                scope_type=request.scope_type,
+                scope_value=request.scope_value,
+                rationale=request.rationale,
+                created_by=request.created_by,
+                expires_in_days=request.expires_in_days,
+                is_permanent=request.is_permanent,
+                permanent_justification=request.permanent_justification,
+            )
+            return {
+                "id": o.id,
+                "axiom_id": o.axiom_id,
+                "scope_type": o.scope_type,
+                "scope_value": o.scope_value,
+                "rationale": o.rationale,
+                "created_by": o.created_by,
+                "created_at": o.created_at.isoformat(),
+                "expires_at": o.expires_at.isoformat(),
+                "is_permanent": o.is_permanent,
+                "permanent_justification": o.permanent_justification,
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
 
     # --- T064: Metrics Endpoint ---
 
