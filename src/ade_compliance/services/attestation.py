@@ -1,3 +1,6 @@
+# implements: FR-014
+# traces_to: Π.3.1
+
 """T061: Attestation service for agent self-governance.
 
 Provides pre-execution compliance self-checks and post-task attestation

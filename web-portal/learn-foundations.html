@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First ADE - Level 1: Foundations</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .page-header {
+            padding: calc(var(--spacing-2xl) + 2rem) 0 var(--spacing-xl);
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, rgba(15, 23, 42, 0) 100%);
+            position: relative;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            transition: color var(--transition-fast);
+        }
+        .back-btn:hover {
+            color: var(--primary);
+        }
+        .manifesto-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: var(--spacing-2xl);
+            margin: var(--spacing-2xl) 0;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        .manifesto-section::before {
+            content: "Σ";
+            position: absolute;
+            right: -20px;
+            bottom: -60px;
+            font-size: 15rem;
+            font-weight: 900;
+            color: rgba(99, 102, 241, 0.03);
+            pointer-events: none;
+        }
+        .manifesto-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-xl);
+            margin-top: var(--spacing-xl);
+        }
+        .manifesto-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: var(--spacing-lg);
+            transition: transform var(--transition-base);
+        }
+        .manifesto-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-xl) 0;
+        }
+        .compare-table th, .compare-table td {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        .compare-table th {
+            background: var(--bg-secondary);
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+        .compare-table tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .badge-positive {
+            background: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .manifesto-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="logo-symbol">Σ</span>
+                <span class="logo-text">First ADE</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="learn-foundations.html" class="nav-link active">Foundations</a>
+                <a href="learn-methodology.html" class="nav-link">Methodology</a>
+                <a href="learn-practice.html" class="nav-link">Practice</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="page-header">
+        <div class="container">
+            <a href="index.html" class="back-btn">← Back to Dashboard</a>
+            <span class="section-badge">Level 1: Foundations</span>
+            <h1 class="gradient-text">Axiom Driven Engineering</h1>
+            <p class="lead">Return to first principles. Learn why and how we construct entire architectural systems based on self-evident software development truths.</p>
+        </div>
+    </div>
+
+    <section class="container">
+        <!-- What is an Axiom? -->
+        <div class="manifesto-section">
+            <h2>What is an Axiom in Software?</h2>
+            <p>In mathematics, an axiom is a statement taken to be true, to serve as a starting point for further reasoning and arguments. In software engineering, an <strong>Axiom</strong> is a fundamental design or organizational truth that we choose to hold as self-evident.</p>
+            <p>By defining our starting axioms, we eliminate the arbitrary "vibes" and "trends" that govern most modern software development. Every decision must be traceable back to these logical roots.</p>
+            
+            <div class="manifesto-grid">
+                <div class="manifesto-card">
+                    <h3>💡 Eliminating Dogma</h3>
+                    <p>Instead of doing things because 'it is the industry standard' or 'framework X says so,' we ask for logical proofs starting from core axioms.</p>
+                </div>
+                <div class="manifesto-card">
+                    <h3>🛡️ Guarding AI Alignment</h3>
+                    <p>AI agents reason flawlessly when bound by mathematical first principles. Giving them self-evident truths prevents architectural drift and hallucinations.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparative Study -->
+        <div style="margin: var(--spacing-2xl) 0;">
+            <h2>Convention-Driven vs. Axiom-Driven</h2>
+            <p>Why do we need this shift? Let's compare standard development workflows with Axiom-Driven Engineering.</p>
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Convention-Driven Development</th>
+                        <th>Axiom-Driven Engineering (ADE)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Decisions</strong></td>
+                        <td>Based on team habits, framework defaults, or tech blog trends.<br><span class="badge-negative">Unjustified</span></td>
+                        <td>Grounded in logical postulates traced directly to core axioms.<br><span class="badge-positive">Traceable</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Specifications</strong></td>
+                        <td>Often absent, outdated, or loose Word documents.<br><span class="badge-negative">Hallucinatory</span></td>
+                        <td>Strictly binding, machine-auditable contracts (spec.md).<br><span class="badge-positive">Executable</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Testing</strong></td>
+                        <td>Written after code, often flaky or bypassing critical logic.<br><span class="badge-negative">Reactive</span></td>
+                        <td>Test-first alignment. Verification must be strictly deterministic.<br><span class="badge-positive">Deterministic</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI Agents</strong></td>
+                        <td>Given free access to rewrite logic, producing "vibe code" and technical debt.<br><span class="badge-negative">Chaos</span></td>
+                        <td>Bound by compliance gates, pre-checks, and signed attestations.<br><span class="badge-positive">Symbiotic</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Deep-Dive: The 5 Axioms -->
+        <div style="margin: var(--spacing-2xl) 0;">
+            <h2>The Five Core Axioms</h2>
+            <p>These five axioms form the immutable constitution of the First-ADE framework:</p>
+            <div class="path-grid" style="margin-top: var(--spacing-xl);">
+                <div class="path-card">
+                    <span class="path-level">Axiom Σ.1</span>
+                    <h3>The Correctness Axiom</h3>
+                    <p><em>"A correct solution exists, given a specification's requirements."</em></p>
+                    <p>If you cannot write a program to solve a spec, either the spec contains logical contradictions or the resources are insufficient. The specification is a binding contract.</p>
+                </div>
+                <div class="path-card">
+                    <span class="path-level">Axiom Σ.2</span>
+                    <h3>Deterministic Verification</h3>
+                    <p><em>"All behavior must be verifiable through deterministic tests."</em></p>
+                    <p>Flaky tests are forbidden. Order dependency, network dependencies, or time-drift must be fully mocked or isolated. If a test fails once in a hundred runs, it is broken.</p>
+                </div>
+                <div class="path-card">
+                    <span class="path-level">Axiom Σ.3</span>
+                    <h3>Traceable Rationale</h3>
+                    <p><em>"Every decision must trace to an axiom or postulate."</em></p>
+                    <p>No arbitrary styling, architectural libraries, or database choices are allowed without documenting the decision logic via Architecture Decision Records (ADRs) that trace back to axioms.</p>
+                </div>
+                <div class="path-card">
+                    <span class="path-level">Axiom Σ.4</span>
+                    <h3>Emergent Complexity</h3>
+                    <p><em>"Complex systems emerge from composing simple, axiom-aligned components."</em></p>
+                    <p>Monolithic complexity is decomposed. By ensuring small, well-bounded modules strictly satisfy their individual specs, the system composed of them is guaranteed correct.</p>
+                </div>
+                <div class="path-card">
+                    <span class="path-level">Axiom Σ.5</span>
+                    <h3>AI Symbiosis</h3>
+                    <p><em>"Human architects define intent; AI agents execute implementation."</em></p>
+                    <p>Human strategic vision defines the system constraints and spec.md files. High-speed AI agents write the implementation code and test cases, working under local compliance control.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 First ADE. Open source under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
