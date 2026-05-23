@@ -42,6 +42,9 @@ def test_validation_exception_raising():
     with pytest.raises(ValidationException):
         raise ValidationException("Invalid validation parameters.")
 
+
+def test_validation_exception_as_value_error():
+    """Verify ValidationException inherits ValueError properties."""
     with pytest.raises(ValueError):
         raise ValidationException("Must behave as a ValueError.")
 
@@ -51,6 +54,9 @@ def test_crypto_attestation_exception_raising():
     with pytest.raises(CryptoAttestationException):
         raise CryptoAttestationException("Invalid signature.")
 
+
+def test_crypto_attestation_exception_as_value_error():
+    """Verify CryptoAttestationException inherits ValueError properties."""
     with pytest.raises(ValueError):
         raise CryptoAttestationException("Must behave as a ValueError.")
 
@@ -60,5 +66,8 @@ def test_escalation_blocked_exception_raising():
     with pytest.raises(EscalationBlockedException):
         raise EscalationBlockedException("Agent is blocked.")
 
+
+def test_escalation_blocked_exception_as_runtime_error():
+    """Verify EscalationBlockedException inherits RuntimeError properties."""
     with pytest.raises(RuntimeError):
         raise EscalationBlockedException("Must behave as a RuntimeError.")
