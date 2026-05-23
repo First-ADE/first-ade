@@ -10,7 +10,7 @@ def verify_commits(base_ref="main"):
     try:
         subprocess.run(["git", "fetch", "origin", base_ref], check=True, capture_output=True)
         result = subprocess.run(
-            ["git", "log", f"origin/{base_ref}...HEAD", "--format=%s"],
+            ["git", "log", f"origin/{base_ref}..HEAD", "--format=%s"],
             check=True,
             capture_output=True,
             text=True
