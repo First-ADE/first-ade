@@ -69,7 +69,6 @@ class ADREngine(BaseEngine):
         if not self.should_run():
             return []
 
-
         violations = []
 
         # If we are inside a git repository, only evaluate the files actually modified/added.
