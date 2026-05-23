@@ -63,3 +63,21 @@ def test_report_generate_summary():
     assert report.summary["total"] == 2
     assert report.summary["new"] == 2
     assert report.summary["resolved"] == 0
+
+
+def test_report_summary_includes_all_states():
+    """Summary should count all four violation states."""
+    v_new = Violation(axiom_id="Π.1.1", file_path="a.py", message="A")
+    v_ack = Violation(axiom_id="Π.2.1", file_path="b.py", message="B")
+    v_ack.acknowledge()
+    v_over = Violation(axiom_id="Π.3.1", file_path="c.py", message="C")
+    v_over.override()
+
+    report = ComplianceReport(repo_root=".", violations=[v_new, v_ack, v_over])
+    report.generate_summary()
+
+    assert report.summary["total"] == 3
+    assert report.summary["new"] == 1
+    assert report.summary["acknowledged"] == 1
+    assert report.summary["resolved"] == 0
+    assert report.summary["overridden"] == 1
