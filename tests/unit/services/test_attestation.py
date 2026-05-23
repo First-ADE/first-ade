@@ -91,7 +91,7 @@ class TestRecordAttestation:
         assert len(entries) >= 1
         actions = [e["action"] for e in entries]
         assert "ATTESTATION_RECORDED" in actions
-        
+
         attest_entry = next(e for e in entries if e["action"] == "ATTESTATION_RECORDED")
         assert attest_entry["details"]["agent_id"] == "agent-1"
         assert attest_entry["details"]["status"] == "passed"

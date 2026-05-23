@@ -5,6 +5,7 @@ audit trail logging, and local SQLite DB storage.
 Consolidates engine setup using the centralized database manager.
 """
 
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -15,6 +16,8 @@ from ..config import Config
 from ..models.decision import Override
 from ..services.audit import AuditService
 from .db import Base, db_session
+
+logger = logging.getLogger(__name__)
 
 
 class OverrideEntry(Base):
@@ -38,23 +41,27 @@ class OverrideService:
     def __init__(self, config: Config):
         self.config = config
         self.audit = AuditService(config)
-        
+
         from sqlalchemy.orm import sessionmaker
 
         from .db import Base as db_Base
         from .db import get_engine
+
         self.engine = get_engine(config)
         db_Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
-        
+
         # Self-healing migration for legacy databases to insert columns if not present
         try:
             from sqlalchemy import text
+
             with self.engine.connect() as conn:
                 conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            # This is an optional legacy self-healing migration and may fail (e.g. if the column already exists).
+            # Log at debug level to keep it observable but non-disruptive.
+            logger.debug("Optional migration 'expiry_notified' column check failed/skipped: %s", e)
 
     def create_override(
         self,
@@ -128,9 +135,7 @@ class OverrideService:
         """Retrieve all currently active (non-expired and non-revoked) overrides."""
         with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
-            entries = session.query(OverrideEntry).filter(
-                OverrideEntry.revoked_at == None
-            ).all()
+            entries = session.query(OverrideEntry).filter(OverrideEntry.revoked_at.is_(None)).all()
 
             active = []
             for e in entries:
@@ -161,7 +166,7 @@ class OverrideService:
                 # Match path against scope
                 p = file_path.replace("\\", "/").strip("/")
                 sv = o.scope_value.replace("\\", "/").strip("/")
-                
+
                 if o.scope_type == "FILE":
                     if p == sv:
                         return True
@@ -182,7 +187,7 @@ class OverrideService:
 
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             entry.revoked_at = now
-            
+
         # Log to audit trail
         self.audit.log(
             "OVERRIDE_REVOKED",
@@ -198,21 +203,26 @@ class OverrideService:
         with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             seven_days_from_now = now + timedelta(days=7)
-            
+
             # Query non-permanent overrides expiring within 7 days that haven't been notified yet
-            entries = session.query(OverrideEntry).filter(
-                OverrideEntry.revoked_at == None,
-                OverrideEntry.is_permanent == False,
-                OverrideEntry.expires_at <= seven_days_from_now,
-                OverrideEntry.expires_at >= now,
-                OverrideEntry.expiry_notified == False
-            ).all()
-            
+            entries = (
+                session.query(OverrideEntry)
+                .filter(
+                    OverrideEntry.revoked_at.is_(None),
+                    OverrideEntry.is_permanent == False,
+                    OverrideEntry.expires_at <= seven_days_from_now,
+                    OverrideEntry.expires_at >= now,
+                    OverrideEntry.expiry_notified == False,
+                )
+                .all()
+            )
+
             expiring = []
             if entries:
                 from ..services.escalation import EscalationService
+
                 escalation_service = EscalationService(self.config)
-                
+
                 for e in entries:
                     e.expiry_notified = True
                     expiring.append(
@@ -230,7 +240,7 @@ class OverrideService:
                             revoked_at=e.revoked_at,
                         )
                     )
-                    
+
                     # Notify responsible party/architects via EscalationService
                     title = f"[ADE Expiry Warning] Compliance Override ID {e.id} is expiring soon"
                     body = (
@@ -243,8 +253,9 @@ class OverrideService:
                         f"- **Expiration**: {e.expires_at.isoformat()} UTC\n\n"
                         f"Please review and recreate if a renewal is required."
                     )
-                    
+
                     from ..utils.async_helpers import run_async_safe
+
                     run_async_safe(escalation_service.escalate(title, body))
-                        
+
             return expiring

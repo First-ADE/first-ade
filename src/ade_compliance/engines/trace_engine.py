@@ -26,18 +26,22 @@ class TraceEngine(BaseEngine):
 
             if suffix == ".py":
                 import tree_sitter_python as tspython
+
                 lang = Language(tspython.language())
                 parser = Parser(lang)
             elif suffix == ".js":
                 import tree_sitter_javascript as tsjavascript
+
                 lang = Language(tsjavascript.language())
                 parser = Parser(lang)
             elif suffix in (".ts", ".tsx"):
                 import tree_sitter_typescript as tstypescript
+
                 lang = Language(tstypescript.language_typescript())
                 parser = Parser(lang)
             elif suffix == ".java":
                 import tree_sitter_java as tsjava
+
                 lang = Language(tsjava.language())
                 parser = Parser(lang)
         except Exception:
@@ -51,7 +55,7 @@ class TraceEngine(BaseEngine):
         comments = []
         if node.type in ("comment", "line_comment", "block_comment"):
             try:
-                comment_text = source_bytes[node.start_byte:node.end_byte].decode("utf-8")
+                comment_text = source_bytes[node.start_byte : node.end_byte].decode("utf-8")
                 comments.append(comment_text)
             except Exception:
                 pass
@@ -63,7 +67,7 @@ class TraceEngine(BaseEngine):
     def extract_links(self, file_path: str, content: str) -> List[TraceLink]:
         # Compute hash
         content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
-        
+
         # Check cache
         if file_path in self._cache:
             cached_hash, cached_links = self._cache[file_path]
@@ -89,7 +93,7 @@ class TraceEngine(BaseEngine):
                 single_match = re.search(r"(?:#|//)\s*(.*)", line)
                 if single_match:
                     comments.append(single_match.group(1))
-            
+
             # 2. Multi-line block comments (/* ... */)
             for block in re.findall(r"/\*([\s\S]*?)\*/", content):
                 for line in block.splitlines():
@@ -165,7 +169,7 @@ class TraceEngine(BaseEngine):
                     "validates": [],
                     "traces_to": [],
                 }
-            
+
             ltype = link.type.lower()
             if ltype in matrix[link.source]:
                 # Avoid duplicates

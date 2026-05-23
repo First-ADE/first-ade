@@ -20,13 +20,15 @@ class ADREngine(BaseEngine):
 
         for f in files:
             path_str = f.replace("\\", "/").strip("/")
-            
+
             # 1. Standard config/meta architectural files
             if path_str in ("pyproject.toml", ".ade-compliance.yml", "setup.py"):
                 architectural_files.append(f)
-            
+
             # 2. Structural models and engines changes
-            elif path_str.startswith("src/ade_compliance/models/") or path_str.startswith("src/ade_compliance/engines/"):
+            elif path_str.startswith("src/ade_compliance/models/") or path_str.startswith(
+                "src/ade_compliance/engines/"
+            ):
                 architectural_files.append(f)
 
             # 3. Detect changes in ADR directory

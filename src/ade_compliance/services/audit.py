@@ -34,6 +34,7 @@ class AuditService:
 
         from .db import Base as db_Base
         from .db import get_engine
+
         self.engine = get_engine(config)
         db_Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
@@ -42,7 +43,7 @@ class AuditService:
         """Append a new cryptographic entry to the audit log."""
         # Log structured JSON to stdout using loguru
         logger.info("audit_event", action=action, details=details)
-        
+
         with db_session(self.config) as session:
             # Query last hash for cryptographic chain
             last_entry = session.query(AuditEntry).order_by(AuditEntry.id.desc()).first()
@@ -57,11 +58,7 @@ class AuditService:
             entry_hash = hashlib.sha256(payload.encode()).hexdigest()
 
             entry = AuditEntry(
-                timestamp=timestamp,
-                action=action,
-                details=details_json,
-                previous_hash=prev_hash,
-                hash=entry_hash
+                timestamp=timestamp, action=action, details=details_json, previous_hash=prev_hash, hash=entry_hash
             )
             session.add(entry)
 
@@ -106,7 +103,7 @@ class AuditService:
                     v_count = details.get("violations_count", 0)
                     violations_count += v_count
                     violations_by_day[date_str] = violations_by_day.get(date_str, 0) + v_count
-                
+
                 elif e.action == "PRE_CHECK_RUN":
                     runs_count += 1
 

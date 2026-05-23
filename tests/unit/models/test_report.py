@@ -55,7 +55,7 @@ def test_report_generate_summary():
         violations=[
             Violation(axiom_id="Π.1.1", file_path="a.py", message="No spec"),
             Violation(axiom_id="Π.2.1", file_path="b.py", message="No test"),
-        ]
+        ],
     )
 
     summary_text = report.generate_summary()

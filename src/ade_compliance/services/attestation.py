@@ -73,7 +73,7 @@ class AttestationService:
         from ..models.decision import Decision
         from ..services.escalation import EscalationService
         from ..utils.async_helpers import run_async_safe
-        
+
         escalation_service = EscalationService(self.config)
 
         if status == "escalated":

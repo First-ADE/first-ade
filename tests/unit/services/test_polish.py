@@ -26,9 +26,9 @@ def test_override_service_expiring_notifications(tmp_path):
     db_file = str(tmp_path / "test_expiring_audit.sqlite").replace("\\", "/")
     cfg = Config()
     cfg.global_settings.audit_path = db_file
-    
+
     svc = OverrideService(cfg)
-    
+
     # 1. Create a non-permanent override expiring in 5 days (expires_in_days=5)
     # Wait, the create_override method calculates expires_at based on expires_in_days.
     # To test expiring in <= 7 days, we can pass expires_in_days=5
@@ -41,7 +41,7 @@ def test_override_service_expiring_notifications(tmp_path):
         created_by="architect-1",
         expires_in_days=5,
     )
-    
+
     # 2. Create another permanent override (should not trigger alert)
     o_perm = svc.create_override(
         axiom_id="Π.2.1",
@@ -52,7 +52,7 @@ def test_override_service_expiring_notifications(tmp_path):
         is_permanent=True,
         permanent_justification="Permanent necessity because of system constraints.",
     )
-    
+
     # 3. Create another override expiring in 30 days (should not trigger alert)
     o_far = svc.create_override(
         axiom_id="Π.3.1",
@@ -67,12 +67,12 @@ def test_override_service_expiring_notifications(tmp_path):
     with patch("ade_compliance.services.escalation.EscalationService.escalate") as mock_escalate:
         # Check expiring overrides
         expiring = svc.check_expiring_overrides()
-        
+
         # Only the 5-day expiring one should be detected and notified
         assert len(expiring) == 1
         assert expiring[0].axiom_id == "Π.1.1"
         mock_escalate.assert_called_once()
-        
+
         # Verify that running it a second time does not notify again (due to SQLite flag update)
         mock_escalate.reset_mock()
         expiring_second = svc.check_expiring_overrides()

@@ -31,6 +31,7 @@ def test_decision_criticality():
 
 def test_override_expiration():
     from datetime import datetime, timedelta, timezone
+
     o = Override(
         axiom_id="Π.1.1",
         scope_type="FILE",
