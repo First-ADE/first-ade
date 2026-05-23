@@ -108,8 +108,11 @@ class AuditService(BaseService):
                     details = {}
                     try:
                         details = json.loads(e.details)
-                    except Exception:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as err:
+                        logger.warning(
+                            f"Failed to parse audit log details for entry ID {e.id} "
+                            f"(action: '{e.action}', timestamp: {e.timestamp.isoformat()}): {err}"
+                        )
 
                     if e.action == "RUN_COMPLETE":
                         runs_count += 1
