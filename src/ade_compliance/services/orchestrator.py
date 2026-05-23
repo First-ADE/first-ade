@@ -45,8 +45,8 @@ class Orchestrator:
 
             override_service = OverrideService(self.config)
             override_service.check_expiring_overrides()
-        except Exception:
-            pass
+        except Exception as exc:
+            self.audit.log("OVERRIDE_EXPIRY_CHECK_FAILED", {"error": str(exc), "stage": "pre-run-expiry-check"})
 
         all_violations = []
 
@@ -67,8 +67,8 @@ class Orchestrator:
                     acquired = stack.enter_context(lock_ctx)
                     if acquired:
                         locked_files.append(f)
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.audit.log("FILE_LOCK_ACQUIRE_FAILED", {"file_path": f, "error": str(e)})
 
             # Run engines concurrently within locked boundary
             tasks = [engine.check(files) for engine in self.engines]

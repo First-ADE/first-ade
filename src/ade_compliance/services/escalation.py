@@ -107,8 +107,10 @@ class EscalationService(BaseService):
                         f"Please audit recent escalations and adjust rules/strictness if necessary."
                     )
                     await self.escalate(title, body)
-        except Exception:
-            pass
+        except Exception as e:
+            from ..observability.logging import logger
+
+            logger.warning(f"Failed to evaluate human review rate limit check for decision '{decision.axiom_id}': {e}")
 
         if decision.requires_human_review:
             title = f"[ADE Escalation] Critical Decision Required: {decision.axiom_id}"

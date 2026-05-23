@@ -39,18 +39,21 @@ def test_exception_inheritance():
 
 def test_exception_raising():
     """Verify raising custom exceptions behaves exactly as expected."""
+    # 1. ValidationException
     with pytest.raises(ValidationException):
         raise ValidationException("Invalid validation parameters.")
 
     with pytest.raises(ValueError):
         raise ValidationException("Must behave as a ValueError.")
 
+    # 2. CryptoAttestationException
     with pytest.raises(CryptoAttestationException):
         raise CryptoAttestationException("Invalid signature.")
 
     with pytest.raises(ValueError):
         raise CryptoAttestationException("Must behave as a ValueError.")
 
+    # 3. EscalationBlockedException
     with pytest.raises(EscalationBlockedException):
         raise EscalationBlockedException("Agent is blocked.")
 
