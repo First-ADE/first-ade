@@ -170,10 +170,10 @@ def run_migrations(engine: Engine) -> None:
 
             if "expiry_notified" in columns:
                 # Legacy DB already has Migration 2 applied, stamp it directly to head
-                command.stamp(alembic_cfg, "2a3b4c5d6e7f")
+                command.stamp(alembic_cfg, "2a3b4c5d6e7f")  # pragma: allowlist secret
             else:
                 # Legacy DB is at Migration 1, stamp it to initial, and let upgrade head do the rest
-                command.stamp(alembic_cfg, "1a2b3c4d5e6f")
+                command.stamp(alembic_cfg, "1a2b3c4d5e6f")  # pragma: allowlist secret
 
         # Upgrade to head
         command.upgrade(alembic_cfg, "head")
