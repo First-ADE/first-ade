@@ -7,6 +7,8 @@ CONVENTIONAL_REGEX = re.compile(
 )
 
 def verify_commits(base_ref="main"):
+    if base_ref.startswith("refs/heads/"):
+        base_ref = base_ref[len("refs/heads/"):]
     try:
         subprocess.run(["git", "fetch", "origin", base_ref], check=True, capture_output=True)
         result = subprocess.run(
