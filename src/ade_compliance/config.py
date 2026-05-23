@@ -2,7 +2,7 @@
 # traces_to: Π.3.1
 
 from pathlib import Path
-from typing import Any, Dict, Literal, Mapping, Optional
+from typing import Any, Dict, List, Literal, Mapping, Optional
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError
@@ -21,6 +21,7 @@ class GlobalSettings(BaseModel):
     strictness: StrictnessLevel = "enforce"
     enabled: bool = True
     audit_path: str = ".ade_compliance/audit.sqlite"
+    database_url: Optional[str] = None
 
     model_config = {"extra": "ignore"}
 
@@ -50,10 +51,21 @@ class EscalationConfig(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+class SSOConfig(BaseModel):
+    enabled: bool = False
+    jwt_secret: Optional[str] = None
+    jwt_public_key: Optional[str] = None
+    algorithms: List[str] = ["HS256", "RS256"]
+    identity_claim: str = "sub"
+
+    model_config = {"extra": "ignore"}
+
+
 class Config(BaseSettings):
     global_settings: GlobalSettings = Field(default_factory=GlobalSettings, alias="global", validation_alias="global")
     engines: Engines = Field(default_factory=Engines)
     escalation: EscalationConfig = EscalationConfig()
+    sso: SSOConfig = SSOConfig()
     axioms: Dict[str, StrictnessLevel] = Field(default_factory=dict)
 
     model_config = SettingsConfigDict(

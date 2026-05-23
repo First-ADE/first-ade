@@ -26,7 +26,7 @@ def upgrade() -> None:
 
     # Add expiry_notified column to override_log table
     op.add_column(
-        "override_log", sa.Column("expiry_notified", sa.Boolean(), server_default=sa.text("0"), nullable=True)
+        "override_log", sa.Column("expiry_notified", sa.Boolean(), server_default=sa.text("false"), nullable=True)
     )
 
 

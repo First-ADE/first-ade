@@ -95,12 +95,39 @@ def get_override_service(request: Request) -> OverrideService:
     return cast(OverrideService, request.app.state.override_service)
 
 
-def get_current_sso_user(x_sso_user: Optional[str] = Header(None, alias="X-SSO-User")) -> str:
-    """Validate that the request has a valid SSO user identifier in headers."""
-    clean_user = (x_sso_user or "").strip()
-    if not clean_user:
-        raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
-    return clean_user
+def get_current_sso_user(
+    request: Request,
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+    x_sso_user: Optional[str] = Header(None, alias="X-SSO-User"),
+) -> str:
+    """Validate that the request has a valid SSO user identifier.
+
+    If JWT SSO is enabled via config, validates the Bearer token in Authorization header.
+    Otherwise, falls back to raw X-SSO-User header.
+    """
+    config = getattr(request.app.state, "config", None)
+    if not config:
+        override_service = getattr(request.app.state, "override_service", None)
+        if override_service:
+            config = override_service.config
+
+    if config and config.sso.enabled:
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="Unauthorized: Missing Authorization Bearer token.")
+
+        token = authorization[7:].strip()
+        from ade_compliance.services.crypto import decode_and_validate_jwt
+
+        try:
+            user = decode_and_validate_jwt(token, config)
+            return user
+        except ValueError as e:
+            raise HTTPException(status_code=401, detail=f"Unauthorized: Invalid JWT token: {e}")
+    else:
+        clean_user = (x_sso_user or "").strip()
+        if not clean_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
+        return clean_user
 
 
 # --- Router ---
@@ -301,6 +328,7 @@ def create_app(
     # Attach services to app state for dependency injection
     app.state.attestation_service = attestation_service
     app.state.override_service = override_service
+    app.state.config = config
 
     # Include modular router
     app.include_router(router)
