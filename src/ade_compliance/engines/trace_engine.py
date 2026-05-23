@@ -80,11 +80,21 @@ class TraceEngine(BaseEngine):
                 tree = parser.parse(source_bytes)
                 comments = self._walk_comments(tree.root_node, source_bytes)
             except Exception:
-                # Fallback to regex comment search if tree-sitter parsing fails
-                comments = re.findall(r"(?:#|//|/\*)\s*(.*)(?:\*/)?", content)
-        else:
-            # Complete regex fallback for comment blocks if parsers are unavailable
-            comments = re.findall(r"(?:#|//|/\*)\s*(.*)(?:\*/)?", content)
+                parser = None
+
+        if not parser:
+            # Fallback to regex comment search if tree-sitter parsing is unavailable or failed
+            # 1. Single-line comments (# and //)
+            for line in content.splitlines():
+                single_match = re.search(r"(?:#|//)\s*(.*)", line)
+                if single_match:
+                    comments.append(single_match.group(1))
+            
+            # 2. Multi-line block comments (/* ... */)
+            for block in re.findall(r"/\*([\s\S]*?)\*/", content):
+                for line in block.splitlines():
+                    cleaned_line = re.sub(r"^\s*\*\s*", "", line).strip()
+                    comments.append(cleaned_line)
 
         # Regex to match implements:, validates:, traces_to:
         pattern = re.compile(r"(?i)\b(implements|validates|traces_to)\s*:\s*([^\n\r*]+)")
