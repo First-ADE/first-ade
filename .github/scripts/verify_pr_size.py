@@ -3,6 +3,8 @@ import sys
 
 
 def verify_pr_size(base_ref="main", limit=200):
+    if base_ref.startswith("refs/heads/"):
+        base_ref = base_ref[len("refs/heads/"):]
     try:
         # Fetch base ref first to ensure it's available
         subprocess.run(["git", "fetch", "origin", base_ref], check=True, capture_output=True)
