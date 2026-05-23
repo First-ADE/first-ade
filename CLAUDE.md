@@ -1,4 +1,4 @@
-﻿# Claude Agent Guidelines: First-ADE Compliance Framework
+# Claude Agent Guidelines: First-ADE Compliance Framework
 
 This document outlines the strict technical, architectural, and procedural standards for development on the **First-ADE Compliance Framework** codebase using Claude Code and anthropic agents.
 
@@ -86,3 +86,26 @@ All agents must strictly follow these git hygiene rules:
    - You must only `git add` the explicit files you created or modified in the current task. This isolates concurrent agent work.
 4. **Prevent Tracked Cache Contamination**:
    - Ensure `**/__pycache__/`, `*.pyc`, and `*.pycc` are explicitly added to `.gitignore`. Check untracked files regularly (`git status -s`).
+
+---
+
+## 🛡️ OOP Refactoring & Development Safeguards
+
+To prevent regressions, timing drifts, connection leaks, and test isolation breaks, all development must adhere to these structural safeguards:
+
+1. **Thread-Safe Scoped Singleton Database Manager**:
+   - Never instantiate raw SQLAlchemy engines or call `create_engine` directly in services.
+   - Always route session management through the thread-safe `DatabaseManager` singleton class.
+   - To guarantee complete test isolation between concurrent unit tests, `DatabaseManager` must cache engines by a compound key of `(id(config), db_path_str)`.
+2. **Programmatic Schema Migrations**:
+   - Never run `Base.metadata.create_all()` directly on production engine setups. Always route database setups through programmatic Alembic migrations (`run_migrations(engine)`) to enable self-healing auto-stamping of legacy databases.
+3. **Polymorphic Base Service Pattern**:
+   - All services must inherit from the `BaseService` abstract class (`src/ade_compliance/services/base.py`).
+   - Use the lazy-loaded, cached property `self.audit` to completely eliminate circular dependency imports.
+4. **Semantic Exception Multi-Inheritance**:
+   - Raise custom, domain-specific exception classes (from `src/ade_compliance/exceptions.py`) instead of generic built-ins.
+   - Custom exceptions MUST implement multiple inheritance, inheriting from both `ADEException` and standard built-ins (e.g. `ValueError`, `RuntimeError`, `OSError`) to maintain seamless backward compatibility with standard error catching blocks and test suites.
+5. **Path Normalization Safeguards**:
+   - Always pass file and directory paths through `normalize_project_path` before evaluating compliance scope matches or engine checks. This blocks bypasses resulting from path representation variations (absolute paths vs. `./` prefixes).
+6. **Bytecode Cache Purging**:
+   - When modifying class constructors or module structures, forcefully clear the python bytecode cache (`Remove-Item -Recurse -Force __pycache__`) to prevent stale compiled modules from polluting pytest loading sequences.
