@@ -1,4 +1,3 @@
-
 import pytest
 from click.testing import CliRunner
 
@@ -31,7 +30,7 @@ def test_cli_subcommands_registered():
         ([Violation(axiom_id="X.1", file_path="a.py", message="Err")], "warn", 2),
         # Violation with global_strictness enforce -> exit code 1
         ([Violation(axiom_id="X.1", file_path="a.py", message="Err")], "enforce", 1),
-    ]
+    ],
 )
 def test_determine_exit_code_fallback(violations, global_strictness, expected_code):
     """Test determine_exit_code fallback to global strictness settings."""
@@ -40,7 +39,7 @@ def test_determine_exit_code_fallback(violations, global_strictness, expected_co
     cfg.engines.spec.strictness = None
     cfg.engines.test.strictness = None
     cfg.engines.trace.strictness = None
-    
+
     code = determine_exit_code(violations, cfg)
     assert code == expected_code
 
@@ -52,20 +51,20 @@ def test_determine_exit_code_per_engine():
     # Axiom Π.3.1 is TraceEngine (mapped to trace)
     v_spec = Violation(axiom_id="Π.1.1", file_path="spec.md", message="Err")
     v_test = Violation(axiom_id="Π.2.1", file_path="foo.py", message="Err")
-    
+
     cfg = Config()
     cfg.global_settings.strictness = "audit"
-    
+
     # 1. Spec is enforce -> exit code 1
     cfg.engines.spec.strictness = "enforce"
     cfg.engines.test.strictness = "warn"
     assert determine_exit_code([v_spec], cfg) == 1
-    
+
     # 2. Spec is audit, Test is warn -> exit code 2
     cfg.engines.spec.strictness = "audit"
     cfg.engines.test.strictness = "warn"
     assert determine_exit_code([v_spec, v_test], cfg) == 2
-    
+
     # 3. Both are audit -> exit code 0
     cfg.engines.spec.strictness = "audit"
     cfg.engines.test.strictness = "audit"

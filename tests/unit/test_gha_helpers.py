@@ -28,7 +28,7 @@ def test_conventional_commits_regex():
         "ci(config): deploy custom github actions workflow gates",
         "build(deps): bump pip lockfile package version",
         "revert: rollback failed diagnostic deployment",
-        "feat(gate)!: break compatibility on schema validation"
+        "feat(gate)!: break compatibility on schema validation",
     ]
     for commit in valid_commits:
         assert verify_commits.CONVENTIONAL_REGEX.match(commit) is not None, f"Should be valid: {commit}"
@@ -40,7 +40,7 @@ def test_conventional_commits_regex():
         "feat(auth) no colon",
         "fix:no-space-after-colon",
         "randomcommit: invalid conventional type",
-        "feat(): empty scope not allowed"
+        "feat(): empty scope not allowed",
     ]
     for commit in invalid_commits:
         assert verify_commits.CONVENTIONAL_REGEX.match(commit) is None, f"Should be invalid: {commit}"
@@ -79,14 +79,14 @@ def test_check_docs_links(tmp_path):
     # Setup mock markdown files with valid and broken relative local links
     doc_dir = tmp_path / "docs"
     doc_dir.mkdir()
-    
+
     spec_dir = tmp_path / "specs"
     spec_dir.mkdir()
 
     # Create target files
     target_file = doc_dir / "target.md"
     target_file.write_text("Some target content.")
-    
+
     # Create main document with links
     main_doc = doc_dir / "main.md"
     main_doc.write_text("""
@@ -103,9 +103,9 @@ def test_check_docs_links(tmp_path):
         # Write specs/spec.md to make /specs/spec.md valid
         spec_file = spec_dir / "spec.md"
         spec_file.write_text("Spec content")
-        
+
         errors = check_docs_links.check_file_links(str(main_doc))
-        
+
         # We expect exactly 1 error (broken link missing.md)
         assert len(errors) == 1
         target, resolved = errors[0]

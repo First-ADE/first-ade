@@ -32,6 +32,7 @@ class Orchestrator:
 
         if hasattr(self.config.engines, "adr") and self.config.engines.adr.enabled:
             from ..engines.adr_engine import ADREngine
+
             self.engines.append(ADREngine(self.config.engines.adr))
 
     async def run(self, files: List[str]) -> ComplianceReport:
@@ -52,7 +53,7 @@ class Orchestrator:
 
         from ..models.axiom import ViolationState
         from ..services.override import OverrideService
-        
+
         override_service = OverrideService(self.config)
         for v in all_violations:
             if override_service.is_override_active(v.axiom_id, v.file_path):
@@ -69,7 +70,7 @@ class Orchestrator:
                     path = sanitize_relative_path(base_dir, file_path)
                     if not path:
                         continue
-                    
+
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
                         with open(path, "r", encoding="utf-8") as f:
                             content = f.read()
@@ -94,6 +95,7 @@ class Orchestrator:
         # Check consecutive failures (Π.5.3)
         if len(all_violations) > 0:
             from ..services.escalation import EscalationService
+
             escalation_service = EscalationService(self.config)
             try:
                 if escalation_service.check_consecutive_failures():
@@ -105,10 +107,7 @@ class Orchestrator:
                         f"{violations_summary}\n\n"
                         "Please review and remediate."
                     )
-                    await escalation_service.escalate(
-                        "[ADE Escalation] 3 Consecutive Agent Failures: Π.5.3",
-                        body
-                    )
+                    await escalation_service.escalate("[ADE Escalation] 3 Consecutive Agent Failures: Π.5.3", body)
             except Exception:
                 pass
 

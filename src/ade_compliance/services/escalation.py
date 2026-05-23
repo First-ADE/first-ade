@@ -40,20 +40,21 @@ class EscalationService:
     def __init__(self, config: Config):
         self.config = config
         self.audit = AuditService(config)
-        
+
         from sqlalchemy.orm import sessionmaker
 
         from .db import Base as db_Base
         from .db import get_engine
+
         self.engine = get_engine(config)
         db_Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
-        
+
         # GitHub configuration from config
         self.github_repo = self.config.escalation.github_repo
         self.retry_max = self.config.escalation.retry_max
         self.backoff_factor = 2  # base for exponential backoff (2^retry_count minutes)
-        
+
         self._update_queue_metric()
 
     def _update_queue_metric(self):
@@ -97,7 +98,7 @@ class EscalationService:
             )
             await self.escalate(title, body)
             return False
-        
+
         return True
 
     async def escalate(self, title: str, body: str) -> bool:
@@ -106,7 +107,7 @@ class EscalationService:
             raise RuntimeError("Agent is blocked due to undelivered escalations in the local queue (fail-closed).")
 
         escalation_total.inc()
-        
+
         success = await self._push_to_github(title, body)
         if success:
             self.audit.log("ESCALATION_DELIVERED", {"title": title})
@@ -114,7 +115,9 @@ class EscalationService:
 
         # Queue locally
         with db_session(self.config) as session:
-            next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=1)  # first retry in 1 minute
+            next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+                minutes=1
+            )  # first retry in 1 minute
             entry = QueuedEscalation(
                 title=title,
                 body=body,
@@ -122,7 +125,7 @@ class EscalationService:
                 next_retry=next_retry,
             )
             session.add(entry)
-            
+
         self.audit.log("ESCALATION_QUEUED", {"title": title})
         self._update_queue_metric()
         return False
@@ -131,7 +134,13 @@ class EscalationService:
         """Check if the last 3 consecutive runs finished with violations (failure)."""
         with db_session(self.config) as session:
             # Query last 3 RUN_COMPLETE actions
-            runs = session.query(AuditEntry).filter(AuditEntry.action == "RUN_COMPLETE").order_by(AuditEntry.id.desc()).limit(3).all()
+            runs = (
+                session.query(AuditEntry)
+                .filter(AuditEntry.action == "RUN_COMPLETE")
+                .order_by(AuditEntry.id.desc())
+                .limit(3)
+                .all()
+            )
             if len(runs) < 3:
                 return False
 
@@ -148,10 +157,11 @@ class EscalationService:
         """Process any pending local queued escalations with exponential backoff."""
         with db_session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
-            pending = session.query(QueuedEscalation).filter(
-                QueuedEscalation.is_blocked == False,
-                QueuedEscalation.next_retry <= now
-            ).all()
+            pending = (
+                session.query(QueuedEscalation)
+                .filter(QueuedEscalation.is_blocked == False, QueuedEscalation.next_retry <= now)
+                .all()
+            )
 
             for item in pending:
                 success = await self._push_to_github(item.title, item.body)
@@ -164,11 +174,10 @@ class EscalationService:
                         item.is_blocked = True
                         item.error_message = "Max retries exceeded"
                         self.audit.log(
-                            "ESCALATION_BLOCKED",
-                            {"id": item.id, "title": item.title, "error": "Max retries exceeded"}
+                            "ESCALATION_BLOCKED", {"id": item.id, "title": item.title, "error": "Max retries exceeded"}
                         )
                     else:
-                        minutes = self.backoff_factor ** item.retry_count
+                        minutes = self.backoff_factor**item.retry_count
                         item.next_retry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=minutes)
                         self.audit.log(
                             "ESCALATION_RETRY_SCHEDULED",
@@ -176,10 +185,10 @@ class EscalationService:
                                 "id": item.id,
                                 "title": item.title,
                                 "retry_count": item.retry_count,
-                                "next_retry": item.next_retry.isoformat()
-                            }
+                                "next_retry": item.next_retry.isoformat(),
+                            },
                         )
-                        
+
         self._update_queue_metric()
 
     def get_human_review_rate(self) -> float:
