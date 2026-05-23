@@ -31,6 +31,7 @@ class Violation(BaseModel):
     axiom_id: str
     file_path: str
     message: str
+    severity: str = "medium"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     state: ViolationState = ViolationState.NEW
 
