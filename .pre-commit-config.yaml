@@ -1,0 +1,46 @@
+# Unified fast compliance checks for local commits and pushes.
+# Heavy and long-running gates (Mypy type-checking, Pytest execution, and ADE Compliance check-all)
+# are offloaded to GitHub Actions to keep the developer commit loop snappy.
+
+# Apply pre-commit stages by default
+default_stages: [pre-commit]
+
+# Exclude template directories containing raw jinja placeholders
+exclude: ^templates/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Critical fast safety checks
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-ast
+      - id: debug-statements
+      - id: check-added-large-files
+      - id: check-case-conflict
+
+      # File hygiene and standardizations
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-docstring-first
+
+      # Schema and markup validators
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: pretty-format-json
+        args: [--autofix, --no-sort-keys]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      # Run the linter (runs on both commit and push stages)
+      - id: ruff
+        stages: [pre-commit, pre-push]
+        args: [--fix]
+      # Run the formatter (runs on both commit and push stages)
+      - id: ruff-format
+        stages: [pre-commit, pre-push]
