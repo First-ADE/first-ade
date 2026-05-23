@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 001-ade-compliance
+  merge_group:
 
 permissions:
   contents: read
