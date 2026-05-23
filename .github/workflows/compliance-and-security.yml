@@ -37,7 +37,7 @@ jobs:
         run: |
           source .venv/bin/activate
           detect-secrets scan --exclude-files "tests/.*" > detect-secrets-results.json
-          if grep -q '"results": {' detect-secrets-results.json; then
+          if [ $(jq '.results | length' detect-secrets-results.json) -gt 0 ]; then
             echo "FAIL: Hardcoded secrets detected!"
             cat detect-secrets-results.json
             exit 1
