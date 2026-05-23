@@ -67,7 +67,15 @@ jobs:
             echo "Checking commit: $commit"
             sig_status=$(git log -1 --format="%G?" $commit)
             echo "Signature status: $sig_status"
-            if [ "$sig_status" != "G" ] && [ "$sig_status" != "U" ]; then
+            
+            # Check if commit has gpgsig header (covers SSH-signed commits on GHA runners)
+            has_gpgsig=false
+            if git cat-file -p $commit | grep -q "^gpgsig"; then
+              has_gpgsig=true
+              echo "Found gpgsig header."
+            fi
+            
+            if [ "$sig_status" != "G" ] && [ "$sig_status" != "U" ] && [ "$has_gpgsig" != "true" ]; then
               echo "FAIL: Commit $commit is not signed or has an invalid signature!"
               exit 1
             fi
