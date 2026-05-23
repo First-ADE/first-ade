@@ -1,15 +1,19 @@
+"""T041: Tamper-proof append-only audit trail logic for compliance events.
+
+Logs framework runs, violations, and override registrations with SHA-256 validation.
+Consolidates engine setup using the centralized database manager.
+"""
+
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
-from sqlalchemy import Column, DateTime, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Column, DateTime, Integer, String
 
 from ..config import Config
 from ..observability.logging import logger
-
-Base = declarative_base()
+from .db import Base, db_session
 
 
 class AuditEntry(Base):
@@ -25,31 +29,22 @@ class AuditEntry(Base):
 
 class AuditService:
     def __init__(self, config: Config):
-        self.db_path = config.global_settings.audit_path
-        if self.db_path == ":memory:" or not self.db_path:
-            url = "sqlite://"
-        else:
-            # Handle windows paths
-            path = self.db_path.replace("\\", "/")
-            url = f"sqlite:///{path}"
+        self.config = config
+        from sqlalchemy.orm import sessionmaker
 
-            # ensure dir exists
-            import pathlib
-
-            p = pathlib.Path(self.db_path)
-            if p.parent and not p.parent.exists():
-                p.parent.mkdir(parents=True, exist_ok=True)
-
-        self.engine = create_engine(url)
-        Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
+        from .db import Base as db_Base
+        from .db import get_engine
+        self.engine = get_engine(config)
+        db_Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def log(self, action: str, details: Dict[str, Any]):
+        """Append a new cryptographic entry to the audit log."""
         # Log structured JSON to stdout using loguru
         logger.info("audit_event", action=action, details=details)
-        session = self.Session()
-        try:
-            # Get last hash
+        
+        with db_session(self.config) as session:
+            # Query last hash for cryptographic chain
             last_entry = session.query(AuditEntry).order_by(AuditEntry.id.desc()).first()
             prev_hash = last_entry.hash if last_entry else "0" * 64
 
@@ -62,16 +57,17 @@ class AuditService:
             entry_hash = hashlib.sha256(payload.encode()).hexdigest()
 
             entry = AuditEntry(
-                timestamp=timestamp, action=action, details=details_json, previous_hash=prev_hash, hash=entry_hash
+                timestamp=timestamp,
+                action=action,
+                details=details_json,
+                previous_hash=prev_hash,
+                hash=entry_hash
             )
             session.add(entry)
-            session.commit()
-        finally:
-            session.close()
 
     def get_entries(self, limit: int = 100) -> List[Dict[str, Any]]:
-        session = self.Session()
-        try:
+        """Retrieve recent audit log entries."""
+        with db_session(self.config) as session:
             entries = session.query(AuditEntry).order_by(AuditEntry.id.desc()).limit(limit).all()
             return [
                 {
@@ -82,13 +78,10 @@ class AuditService:
                 }
                 for e in entries
             ]
-        finally:
-            session.close()
 
     def get_trend_report(self, days: int = 30) -> Dict[str, Any]:
         """Aggregate compliance metrics and trends over the last specified number of days."""
-        session = self.Session()
-        try:
+        with db_session(self.config) as session:
             cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
             entries = session.query(AuditEntry).filter(AuditEntry.timestamp >= cutoff).all()
 
@@ -137,5 +130,3 @@ class AuditService:
                 "overrides_count": overrides_count,
                 "overrides_by_day": overrides_by_day,
             }
-        finally:
-            session.close()
