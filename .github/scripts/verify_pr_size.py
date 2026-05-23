@@ -3,15 +3,14 @@ import sys
 
 
 def verify_pr_size(base_ref="main", limit=200):
+    if base_ref.startswith("refs/heads/"):
+        base_ref = base_ref[len("refs/heads/") :]
     try:
         # Fetch base ref first to ensure it's available
         subprocess.run(["git", "fetch", "origin", base_ref], check=True, capture_output=True)
         # Git diff stats: --numstat prints: added deleted path
         result = subprocess.run(
-            ["git", "diff", "--numstat", f"origin/{base_ref}...HEAD"],
-            check=True,
-            capture_output=True,
-            text=True
+            ["git", "diff", "--numstat", f"origin/{base_ref}...HEAD"], check=True, capture_output=True, text=True
         )
         total_changes = 0
         for line in result.stdout.strip().split("\n"):
@@ -24,7 +23,7 @@ def verify_pr_size(base_ref="main", limit=200):
                 # If they are numerical (not binary file '-')
                 if added.isdigit() and deleted.isdigit():
                     total_changes += int(added) + int(deleted)
-        
+
         print(f"Total lines modified in this PR: {total_changes}")
         if total_changes > limit:
             print(f"WARNING: PR size ({total_changes} lines) exceeds target guideline of {limit} lines!")
@@ -38,8 +37,10 @@ def verify_pr_size(base_ref="main", limit=200):
         print(f"Error checking PR size: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="main", help="Base branch ref")
     parser.add_argument("--limit", type=int, default=200, help="PR size limit in lines")
