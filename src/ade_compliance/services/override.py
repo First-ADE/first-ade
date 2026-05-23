@@ -6,9 +6,9 @@ audit trail logging, and local SQLite DB storage.
 
 import uuid
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List
 
-from sqlalchemy import Column, String, DateTime, Boolean, create_engine, text
+from sqlalchemy import Boolean, Column, DateTime, String, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from ..config import Config

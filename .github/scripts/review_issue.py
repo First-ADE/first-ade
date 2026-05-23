@@ -1,6 +1,8 @@
 import os
 import sys
+
 import requests
+
 
 def main():
     api_key = os.environ.get("GEMINI_API_KEY")

@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from ade_compliance.config import EngineConfig
 from ade_compliance.engines.adr_engine import ADREngine
@@ -81,8 +80,8 @@ def test_adr_engine_architectural_change_with_adr_failure(mock_run):
 
 def test_orchestrator_loads_adr_engine():
     """Verify that the Orchestrator initializes ADREngine when configured."""
-    from ade_compliance.services.orchestrator import Orchestrator
     from ade_compliance.config import Config
+    from ade_compliance.services.orchestrator import Orchestrator
     cfg = Config()
     cfg.engines.adr.enabled = True
     

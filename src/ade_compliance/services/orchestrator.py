@@ -45,9 +45,10 @@ class Orchestrator:
             all_violations.extend(violations)
 
         # Apply active overrides to violations
-        from ..services.override import OverrideService
-        from ..models.axiom import ViolationState
         from datetime import datetime
+
+        from ..models.axiom import ViolationState
+        from ..services.override import OverrideService
         
         override_service = OverrideService(self.config)
         for v in all_violations:

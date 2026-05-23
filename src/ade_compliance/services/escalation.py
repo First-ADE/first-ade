@@ -8,20 +8,18 @@ Provides:
 - Human Architect review rate tracking.
 """
 
-import os
 import json
-import hashlib
+import os
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
 
 import httpx
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, create_engine
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from ..config import Config
 from ..models.decision import Decision
-from ..services.audit import AuditService, AuditEntry
 from ..observability.metrics import escalation_queue_depth, escalation_total
+from ..services.audit import AuditEntry, AuditService
 
 Base = declarative_base()
 
