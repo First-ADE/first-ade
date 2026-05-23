@@ -17,7 +17,7 @@
 - Q: Observability signals? → A: Structured logs + Prometheus-style metrics (latency p50/p95/p99, violation counts by axiom/severity, escalation queue depth, cache hit rate).
 - Q: Fallback when GitHub is unreachable for escalations? → A: Queue locally, exponential backoff (max 5 retries / 15 min). If still failing, block agent and log locally.
 - Q: Incremental adoption model for legacy codebases? → A: Three strictness levels — audit (log only), warn (allow with acknowledgment), enforce (block). Per-axiom configurable.
-- Q: Override expiration/scope limits? → A: Mandatory scope (file/directory/component). Optional expiration (default 90 days). Permanent requires elevated justification (defined as a non-empty string starting with SSO peer-review ID 'SSO-PR-' or cryptographic signature 'SSO-SIG-'). Expired overrides auto-revert.
+- Q: Override expiration/scope limits? → A: Mandatory scope (file/directory/component). Optional expiration (default 90 days). Permanent requires elevated justification (procedurally defined as requiring an explicit human digital signature starting with 'SSO-SIG-' or a logged peer review ID starting with 'SSO-PR-' verified by the SSO system). Expired overrides auto-revert.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -50,8 +50,8 @@ As an agent, I want verification that tests exist before writing implementation 
 
 **Acceptance**:
 1. No corresponding test file → operation blocked, test creation required
-2. Test files exist but insufficient coverage → violation raised at configured strictness level (default: enforce; configurable per .ade-compliance.yml)
-3. Adequate tests exist → operation allowed
+2. Test files exist but insufficient coverage (below 80% coverage) → violation raised at configured strictness level (default: enforce; configurable per .ade-compliance.yml)
+3. Adequate tests exist (≥80% coverage) → operation allowed
 
 ---
 
@@ -75,6 +75,15 @@ As a Human Architect, I want critical decisions and repeated agent failures esca
 2. High/critical decision → routed to Human Architect
 3. Low/medium decision passing checks → auto-approved
 4. Architect decides escalation → logged with rationale and axiom reference
+
+#### Criticality Taxonomy Rubric
+
+| Criticality Level | Rule / Event Type | Routing / Action |
+| ----------------- | ----------------- | ---------------- |
+| **Critical**      | MUST violations (e.g., missing specs or tests, pre-commit failures, or core business logic <80% line coverage) | Block operation and immediately Alert Human Architect |
+| **High**          | Overrides, consecutive agent failures (3+) | Route to Human Architect for review |
+| **Medium**        | Configurable warnings (e.g., non-core coverage <80% if strictness=warn, or performance check budget >10s) | Log warning and allow operations with acknowledgment |
+| **Low**           | Checks passing, auto-approvals | Auto-approve and log in the audit trail |
 
 ---
 
@@ -114,13 +123,13 @@ As an AI agent, I want to self-check compliance before execution and provide att
 ### Edge Cases
 
 - **Internal failure** (DB corruption, parser crash): Fail-closed — block and alert Human Architect
-- **No `.ade-compliance.yml`**: Use sensible defaults with warning
+- **No `.ade-compliance.yml`**: Use sensible defaults with warning. Fallback defaults: global coverage threshold = 80%, strictness = warn for non-core / enforce for core, performance check timeout budget = 10s.
 - **Conflicting axioms**: Detect conflict, escalate to Human Architect
 - **Legacy code**: Adopt incrementally via audit → warn → enforce levels (per-axiom)
 - **Check exceeds 10s budget**: Log performance warning; Human Architect can adjust via `.ade-compliance.yml` `performance.check_timeout_seconds`
-- **GitHub unreachable**: Queue locally, exponential backoff (5 retries / 15 min), then block agent
-- **Override expires**: Auto-revert to enforcement; notify responsible party 7 days before
-- **Concurrent checks on same file**: Serialize per-file to prevent audit trail race conditions
+- **GitHub unreachable**: Queue locally, exponential backoff (5 retries / 15 min), then block agent. Enforce blocking by returning a dedicated exit code 3 from the framework to halt active CI processes or block downstream runs.
+- **Override expires**: Auto-revert to enforcement; notify responsible party 7 days before.
+- **Concurrent checks on same file**: Serialize concurrent checks per-file using standard file-system locks (standard file locking) on the target file paths to prevent audit trail race conditions.
 
 ## Requirements *(mandatory)*
 
@@ -140,21 +149,21 @@ As an AI agent, I want to self-check compliance before execution and provide att
 - **FR-012**: Machine-readable compliance reports (JSON with schema version)
 - **FR-013**: Support agent pre-execution compliance self-checks
 - **FR-014**: Require agent compliance attestations on task completion
-- **FR-015**: Validate test determinism (no external state, timing, or order dependencies)
+- **FR-015**: Validate test determinism (no external state, timing, or order dependencies) through programmatic mechanisms, including static analysis checks for forbidden API calls (e.g., `time.sleep`), runtime execution randomization via `pytest-randomly`, and network/external resource call mocking.
 - **FR-016**: Enforce configurable test coverage thresholds; block commits below threshold
 - **FR-017**: Programmatic API for integrating compliance checks into other tools
 - **FR-018**: Common compliance interface via local HTTP API (roadmap: MCP with RAG) for Copilot, Gemini, Claude, Kiro
 - **FR-019**: Support Python, TypeScript, JavaScript, and Java for traceability extraction
 - **FR-020**: Generate traceability matrix: code → tests → requirements → axioms
-- **FR-021**: Human Architect override of violations with mandatory rationale and mandatory scope (file/directory/component). Overrides have a default 90-day expiration with auto-revert. Permanent overrides require elevated justification (defined as a non-empty string starting with SSO peer-review ID 'SSO-PR-' or cryptographic signature 'SSO-SIG-').
-- **FR-022**: Track % of decisions requiring Human review; alert when >5%
+- **FR-021**: Human Architect override of violations with mandatory rationale and mandatory scope (file/directory/component). Overrides have a 90-day default expiration with auto-revert. Permanent overrides require elevated justification (procedurally defined as requiring an explicit human digital signature starting with 'SSO-SIG-' or a logged peer review ID starting with 'SSO-PR-' verified by the SSO system).
+- **FR-022**: Track the percentage of decisions requiring Human review; alert via stdout warnings, SQLite alert records, and automated GitHub issue creation when it exceeds 5%.
 - **FR-023**: Block deployments with unresolved violations unless Human Architect overrides
 - **FR-024**: Compliance dashboard: metrics, violation trends, component health *(Deferred: separate feature spec; data layer in US-6 supports future dashboard)*
 - **FR-025**: Fail-closed on internal failures — block rather than pass non-compliant code (see also FR-006 for violation-based blocking)
 - **FR-026**: Expose observability: latency percentiles (p50/p95/p99), violation counts by axiom/severity, escalation queue depth, cache hit rate
 - **FR-027**: Three configurable strictness levels per axiom: audit, warn, enforce
-- **FR-028**: Queue escalation notifications locally on delivery failure; retry with exponential backoff (5 retries / 15 min)
-- **FR-030**: Serialize concurrent checks per-file to prevent audit trail race conditions
+- **FR-028**: Queue escalation notifications locally on delivery failure; retry with exponential backoff (5 retries / 15 min). If all retries fail, return exit code 3 to block downstream runs and halt active CI processes.
+- **FR-030**: Serialize concurrent checks per-file using standard file-system locks (standard file locking) on the target file paths to prevent audit trail race conditions.
 
 ### Key Entities
 
