@@ -1,3 +1,6 @@
+# implements: FR-017
+# traces_to: Π.3.1
+
 """Centralized Path Validation and Sanitization Utility for ADE Compliance.
 
 Provides a robust, CodeQL-approved segment-by-segment path traversal sanitizer

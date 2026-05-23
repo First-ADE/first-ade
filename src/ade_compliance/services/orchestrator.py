@@ -1,3 +1,6 @@
+# implements: FR-006
+# traces_to: Π.3.1
+
 """Compliance Orchestrator Coordinating Verification Engines."""
 
 import asyncio
@@ -49,16 +52,12 @@ class Orchestrator:
             all_violations.extend(violations)
 
         # Apply active overrides to violations
-        from datetime import datetime, timezone
-
-        from ..models.axiom import ViolationState
         from ..services.override import OverrideService
 
         override_service = OverrideService(self.config)
         for v in all_violations:
             if override_service.is_override_active(v.axiom_id, v.file_path):
-                v.state = ViolationState.OVERRIDDEN
-                v.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
+                v.override()
 
         # Extract traceability links from all files to compile matrix
         traceability_matrix = {}

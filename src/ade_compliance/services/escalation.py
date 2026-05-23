@@ -1,3 +1,6 @@
+# implements: FR-009
+# traces_to: Π.5.3
+
 """T043/T044/T045/T046/T047: Escalation service for routing critical decisions to Human Architect.
 
 Provides:
