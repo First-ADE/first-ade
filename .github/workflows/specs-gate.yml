@@ -1,0 +1,73 @@
+name: Specs Gate Compliance
+
+on:
+  pull_request:
+    paths:
+      - 'specs/**'
+
+jobs:
+  validate-specs:
+    name: Validate Spec-Kit Structures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for diff checks
+
+      - name: Validate changed Spec-Kit folders
+        shell: bash
+        run: |
+          echo "Checking for changed directories under specs/..."
+          
+          # Get list of changed files under specs/
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^specs/' || true)
+          
+          if [ -z "$changed_files" ]; then
+            echo "No specification files found in the pull request diff."
+            exit 0
+          fi
+          
+          echo "Modified specification files:"
+          echo "$changed_files"
+          
+          # Extract parent directories (e.g. specs/001-ade-compliance)
+          spec_dirs=$(echo "$changed_files" | cut -d'/' -f1-2 | sort -u)
+          
+          has_error=0
+          for dir in $spec_dirs; do
+            # Skip the root 'specs' dir itself if listed
+            if [ "$dir" = "specs" ]; then
+              continue
+            fi
+            
+            echo "============================================="
+            echo "Checking Spec-Kit directory: $dir"
+            
+            # Enforce Principle II: spec.md, plan.md, and tasks.md must exist
+            missing_files=()
+            
+            if [ ! -f "$dir/spec.md" ]; then
+              missing_files+=("spec.md")
+            fi
+            if [ ! -f "$dir/plan.md" ]; then
+              missing_files+=("plan.md")
+            fi
+            if [ ! -f "$dir/tasks.md" ]; then
+              missing_files+=("tasks.md")
+            fi
+            
+            if [ ${#missing_files[@]} -ne 0 ]; then
+              echo "::error file=$dir::CRITICAL VIOLATION of Principle II (Specification Governance): Directory '$dir' is missing mandatory files: ${missing_files[*]}"
+              has_error=1
+            else
+              echo "✓ OK: All mandatory Spec-Kit files (spec.md, plan.md, tasks.md) exist."
+            fi
+          done
+          
+          if [ "$has_error" -eq 1 ]; then
+            echo "Specs Gate validation failed. Please check Principle II."
+            exit 1
+          fi
+          
+          echo "All Spec-Kit structure checks passed successfully!"
