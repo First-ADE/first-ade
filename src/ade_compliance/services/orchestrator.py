@@ -27,6 +27,10 @@ class Orchestrator:
         else:
             self.trace_engine = None
 
+        if hasattr(self.config.engines, "adr") and self.config.engines.adr.enabled:
+            from ..engines.adr_engine import ADREngine
+            self.engines.append(ADREngine(self.config.engines.adr))
+
     async def run(self, files: List[str]) -> ComplianceReport:
         all_violations = []
 
