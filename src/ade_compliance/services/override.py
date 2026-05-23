@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from sqlalchemy import Column, String, DateTime, Boolean, create_engine
+from sqlalchemy import Column, String, DateTime, Boolean, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from ..config import Config
@@ -32,6 +32,7 @@ class OverrideEntry(Base):
     is_permanent = Column(Boolean, default=False)
     permanent_justification = Column(String, nullable=True)
     revoked_at = Column(DateTime, nullable=True)
+    expiry_notified = Column(Boolean, default=False)
 
 
 class OverrideService:
@@ -54,6 +55,15 @@ class OverrideService:
 
         self.engine = create_engine(url)
         Base.metadata.create_all(self.engine)
+        
+        # Self-healing migration for existing databases adding the expiry_notified column
+        try:
+            with self.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
+                conn.commit()
+        except Exception:
+            pass
+
         self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def create_override(
@@ -213,5 +223,76 @@ class OverrideService:
                 },
             )
             return True
+        finally:
+            session.close()
+
+    def check_expiring_overrides(self) -> List[Override]:
+        """Check for active overrides expiring in <= 7 days and notify via EscalationService."""
+        session = self.Session()
+        try:
+            now = datetime.utcnow()
+            seven_days_from_now = now + timedelta(days=7)
+            
+            # Query non-permanent overrides expiring within 7 days that haven't been notified yet
+            entries = session.query(OverrideEntry).filter(
+                OverrideEntry.revoked_at == None,
+                OverrideEntry.is_permanent == False,
+                OverrideEntry.expires_at <= seven_days_from_now,
+                OverrideEntry.expires_at >= now,
+                OverrideEntry.expiry_notified == False
+            ).all()
+            
+            expiring = []
+            if entries:
+                from ..services.escalation import EscalationService
+                escalation_service = EscalationService(self.config)
+                
+                for e in entries:
+                    e.expiry_notified = True
+                    expiring.append(
+                        Override(
+                            id=e.id,
+                            axiom_id=e.axiom_id,
+                            scope_type=e.scope_type,
+                            scope_value=e.scope_value,
+                            rationale=e.rationale,
+                            created_by=e.created_by,
+                            created_at=e.created_at,
+                            expires_at=e.expires_at,
+                            is_permanent=e.is_permanent,
+                            permanent_justification=e.permanent_justification,
+                            revoked_at=e.revoked_at,
+                        )
+                    )
+                    
+                    # Notify responsible party/architects via EscalationService
+                    title = f"[ADE Expiry Warning] Compliance Override ID {e.id} is expiring soon"
+                    body = (
+                        f"The following compliance override is expiring in less than 7 days "
+                        f"and will automatically auto-revert to enforcement:\n\n"
+                        f"- **ID**: {e.id}\n"
+                        f"- **Axiom**: {e.axiom_id}\n"
+                        f"- **Scope**: {e.scope_type} ({e.scope_value})\n"
+                        f"- **Rationale**: {e.rationale}\n"
+                        f"- **Expiration**: {e.expires_at.isoformat()} UTC\n\n"
+                        f"Please review and recreate if a renewal is required."
+                    )
+                    
+                    # Safe async trigger helper
+                    import asyncio
+                    try:
+                        loop = asyncio.get_running_loop()
+                    except RuntimeError:
+                        loop = None
+                        
+                    if loop and loop.is_running():
+                        from concurrent.futures import ThreadPoolExecutor
+                        with ThreadPoolExecutor() as executor:
+                            executor.submit(lambda: asyncio.run(escalation_service.escalate(title, body))).result()
+                    else:
+                        asyncio.run(escalation_service.escalate(title, body))
+                
+                session.commit()
+            return expiring
         finally:
             session.close()
