@@ -82,7 +82,7 @@ def test_verify_tampered_signature():
     sig_b64 = base64.b64encode(signature).decode("utf-8")
 
     # Tampered signature
-    tampered_sig = "A" + sig_b64[1:]
+    tampered_sig = base64.b64encode(b"completely_different_and_tampered_signature_payload").decode("utf-8")
     assert verify_sso_signature(architect_id, tampered_sig, rationale) is False
 
     # Tampered rationale

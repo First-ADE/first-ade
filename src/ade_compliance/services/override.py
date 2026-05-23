@@ -49,18 +49,6 @@ class OverrideService(BaseService):
         _, session_factory = self.db_manager.get_engine_and_factory(self.config)
         self.Session = session_factory
 
-        # Self-healing migration for legacy databases to insert columns if not present
-        try:
-            from sqlalchemy import text
-
-            with self.engine.connect() as conn:
-                conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
-                conn.commit()
-        except Exception as e:
-            # This is an optional legacy self-healing migration and may fail (e.g. if the column already exists).
-            # Log at debug level to keep it observable but non-disruptive.
-            logger.debug("Optional migration 'expiry_notified' column check failed/skipped: %s", e)
-
     def create_override(
         self,
         axiom_id: str,

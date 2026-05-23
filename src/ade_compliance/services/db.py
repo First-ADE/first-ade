@@ -61,7 +61,6 @@ class DatabaseManager:
         with self.lock:
             if db_path_str in self.engines_cache:
                 engine, factory = self.engines_cache[db_path_str]
-                Base.metadata.create_all(engine)
                 return engine, factory
 
             try:
@@ -78,8 +77,9 @@ class DatabaseManager:
                         p.parent.mkdir(parents=True, exist_ok=True)
 
                 engine = create_engine(url)
-                # Ensure all tables registered under shared Base are created once upon initialization
-                Base.metadata.create_all(engine)
+
+                # Programmatically run Alembic migrations on engine creation
+                run_migrations(engine)
 
                 session_factory = sessionmaker(bind=engine, expire_on_commit=False)
                 self.engines_cache[db_path_str] = (engine, session_factory)
@@ -135,3 +135,45 @@ def db_session(config: Config) -> Generator[Session, None, None]:
     """
     with DatabaseManager().session(config) as session:
         yield session
+
+
+def run_migrations(engine: Engine) -> None:
+    """Programmatically run Alembic migrations on the given engine.
+
+    Includes self-healing auto-stamping logic for legacy databases.
+    """
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config as AlembicConfig
+    from sqlalchemy import inspect
+
+    # Determine migration directory path relative to this file
+    current_dir = Path(__file__).parent.parent
+    script_location = current_dir / "migrations"
+
+    # Create Alembic Config
+    alembic_cfg = AlembicConfig()
+    alembic_cfg.set_main_option("script_location", str(script_location))
+
+    # Inspect connection to see if it is a legacy database
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+
+    with engine.begin() as connection:
+        alembic_cfg.attributes["connection"] = connection
+
+        if "audit_log" in existing_tables and "alembic_version" not in existing_tables:
+            # Legacy database without migration tracking.
+            # Inspect override_log schema to determine revision level
+            columns = [col["name"] for col in inspector.get_columns("override_log")]
+
+            if "expiry_notified" in columns:
+                # Legacy DB already has Migration 2 applied, stamp it directly to head
+                command.stamp(alembic_cfg, "2a3b4c5d6e7f")
+            else:
+                # Legacy DB is at Migration 1, stamp it to initial, and let upgrade head do the rest
+                command.stamp(alembic_cfg, "1a2b3c4d5e6f")
+
+        # Upgrade to head
+        command.upgrade(alembic_cfg, "head")
