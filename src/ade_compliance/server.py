@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Header, Depends, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -188,12 +188,21 @@ def create_app(
 
     # --- T063: Overrides Endpoint ---
 
+    def get_current_sso_user(x_sso_user: Optional[str] = Header(None, alias="X-SSO-User")) -> str:
+        """Validate that the request has a valid SSO user identifier in headers."""
+        if not x_sso_user:
+            raise HTTPException(
+                status_code=401,
+                detail="Unauthorized: Missing X-SSO-User SSO authentication header."
+            )
+        return x_sso_user
+
     from ade_compliance.services.override import OverrideService
     override_service = OverrideService(config)
 
     @app.get("/overrides")
-    def get_overrides():
-        """List all currently active compliance overrides."""
+    def get_overrides(current_user: str = Depends(get_current_sso_user)):
+        """List all currently active compliance overrides (authenticated via SSO)."""
         active = override_service.get_active_overrides()
         return [
             {
@@ -213,9 +222,13 @@ def create_app(
         ]
 
     @app.post("/overrides")
-    def create_override(request: CreateOverrideRequest):
-        """Create a new compliance override."""
-        from fastapi import HTTPException
+    def create_override(request: CreateOverrideRequest, current_user: str = Depends(get_current_sso_user)):
+        """Create a new compliance override (Human Architect only, validated via SSO)."""
+        if request.created_by != current_user:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Forbidden: SSO user '{current_user}' does not match created_by '{request.created_by}'"
+            )
         try:
             o = override_service.create_override(
                 axiom_id=request.axiom_id,
