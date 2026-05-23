@@ -5,6 +5,7 @@ audit trail logging, and local SQLite DB storage.
 Consolidates engine setup using the centralized database manager.
 """
 
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -15,6 +16,8 @@ from ..config import Config
 from ..models.decision import Override
 from ..services.audit import AuditService
 from .db import Base, db_session
+
+logger = logging.getLogger(__name__)
 
 
 class OverrideEntry(Base):
@@ -55,8 +58,10 @@ class OverrideService:
             with self.engine.connect() as conn:
                 conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
                 conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            # This is an optional legacy self-healing migration and may fail (e.g. if the column already exists).
+            # Log at debug level to keep it observable but non-disruptive.
+            logger.debug("Optional migration 'expiry_notified' column check failed/skipped: %s", e)
 
     def create_override(
         self,
