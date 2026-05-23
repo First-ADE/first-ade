@@ -97,9 +97,10 @@ def get_override_service(request: Request) -> OverrideService:
 
 def get_current_sso_user(x_sso_user: Optional[str] = Header(None, alias="X-SSO-User")) -> str:
     """Validate that the request has a valid SSO user identifier in headers."""
-    if not x_sso_user:
+    clean_user = (x_sso_user or "").strip()
+    if not clean_user:
         raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
-    return x_sso_user
+    return clean_user
 
 
 # --- Router ---

@@ -82,6 +82,15 @@ class OverrideService:
         if len(rationale) < 20:
             raise ValueError("Rationale must be at least 20 characters long.")
 
+        # Validate scope type
+        if scope_type not in ("FILE", "DIRECTORY", "COMPONENT"):
+            raise ValueError("Override scope_type must be one of 'FILE', 'DIRECTORY', or 'COMPONENT'.")
+
+        # Validate and clean scope value
+        scope_value_clean = (scope_value or "").strip().replace("\\", "/").strip("/")
+        if not scope_value_clean:
+            raise ValueError("Override scope_value cannot be empty or whitespace-only.")
+
         if is_permanent:
             justification = (permanent_justification or "").strip()
             if not justification:
@@ -99,7 +108,7 @@ class OverrideService:
             id=override_id,
             axiom_id=axiom_id,
             scope_type=scope_type,
-            scope_value=scope_value,
+            scope_value=scope_value_clean,
             rationale=rationale,
             created_by=created_by,
             expires_at=expires_at,
@@ -119,7 +128,7 @@ class OverrideService:
                 "id": override_id,
                 "axiom_id": axiom_id,
                 "scope_type": scope_type,
-                "scope_value": scope_value,
+                "scope_value": scope_value_clean,
                 "rationale": rationale,
                 "created_by": created_by,
                 "expires_at": expires_at.isoformat(),
@@ -132,7 +141,7 @@ class OverrideService:
             id=override_id,
             axiom_id=axiom_id,
             scope_type=scope_type,
-            scope_value=scope_value,
+            scope_value=scope_value_clean,
             rationale=rationale,
             created_by=created_by,
             created_at=created_at,
@@ -170,11 +179,14 @@ class OverrideService:
 
     def is_override_active(self, axiom_id: str, file_path: str) -> bool:
         """Check if an active override covers this axiom ID and file path."""
+        from ..utils.path import normalize_project_path
+
+        p = normalize_project_path(file_path)
         active_list = self.get_active_overrides()
+
         for o in active_list:
             if o.axiom_id == axiom_id:
                 # Match path against scope
-                p = file_path.replace("\\", "/").strip("/")
                 sv = o.scope_value.replace("\\", "/").strip("/")
 
                 if o.scope_type == "FILE":

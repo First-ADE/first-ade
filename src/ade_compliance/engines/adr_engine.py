@@ -85,6 +85,10 @@ class ADREngine(BaseEngine):
         for f in check_files:
             path_str = f.replace("\\", "/").strip("/")
 
+            # Skip temporary lock files
+            if path_str.endswith(".lock"):
+                continue
+
             # 1. Standard config/meta architectural files
             if path_str in ("pyproject.toml", ".ade-compliance.yml", "setup.py"):
                 architectural_files.append(f)

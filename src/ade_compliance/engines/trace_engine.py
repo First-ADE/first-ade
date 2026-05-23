@@ -1,3 +1,6 @@
+# implements: FR-003
+# traces_to: Π.3.1
+
 import hashlib
 import re
 from pathlib import Path
@@ -125,11 +128,14 @@ class TraceEngine(BaseEngine):
         if not self.should_run():
             return []
 
+        from ..utils.path import normalize_project_path
+
         violations: List[Violation] = []
         for file_path in files:
+            norm_path = normalize_project_path(file_path)
             path = Path(file_path)
             # Only trace code in src/ or tests/
-            if not (file_path.startswith("src/") or file_path.startswith("tests/")):
+            if not (norm_path.startswith("src/") or norm_path.startswith("tests/")):
                 continue
 
             # Support checking supported language suffixes
@@ -148,12 +154,12 @@ class TraceEngine(BaseEngine):
             links = self.extract_links(file_path, content)
 
             # Heuristic: Every implementation file in src/ must have at least one trace link
-            if file_path.startswith("src/") and not links:
+            if norm_path.startswith("src/") and not links:
                 violations.append(
                     Violation(
                         axiom_id="Π.3.1",
-                        file_path=file_path,
-                        message=f"Missing traceability links in {file_path}. Must declare implements/traces_to markers in comments.",
+                        file_path=norm_path,
+                        message=f"Missing traceability links in {norm_path}. Must declare implements/traces_to markers in comments.",
                         state=ViolationState.NEW,
                     )
                 )
