@@ -59,7 +59,10 @@ class TestDecisionRouting:
         decision_high = Decision(axiom_id="Π.2.1", rationale="High risk", criticality="high")
         decision_crit = Decision(axiom_id="Π.2.1", rationale="Critical risk", criticality="critical")
 
-        with patch.object(escalation_service, "escalate", new_callable=AsyncMock) as mock_escalate:
+        with (
+            patch.object(escalation_service, "escalate", new_callable=AsyncMock) as mock_escalate,
+            patch.object(escalation_service, "get_human_review_rate", return_value=0.0),
+        ):
             mock_escalate.return_value = True
 
             res_high = await escalation_service.evaluate_decision(decision_high)
@@ -220,3 +223,43 @@ class TestConsecutiveFailuresAndReviewRate:
         # 1 out of 3 decisions requires human review -> 33.3%
         rate = escalation_service.get_human_review_rate()
         assert pytest.approx(rate, 0.01) == 0.333
+
+    @pytest.mark.asyncio
+    async def test_human_review_rate_alert_triggered(self, escalation_service):
+        """Verify that when the human review rate exceeds 5%, an alert is logged and escalated."""
+        # 1. Evaluate 19 low decisions (auto-approved)
+        # 2. Evaluate 1 high decision (requires review). Total: 20. Reviews: 1. Rate: 5%.
+        # 3. Evaluate 1 high decision (requires review). Total: 21. Reviews: 2. Rate: 9.5% > 5%. (Exceeds limit!)
+
+        with patch.object(escalation_service, "escalate", new_callable=AsyncMock) as mock_escalate:
+            mock_escalate.return_value = True
+
+            # Evaluate 19 low decisions
+            for _ in range(19):
+                dec = Decision(axiom_id="Π.1.1", rationale="OK rationale for automatic approval.", criticality="low")
+                await escalation_service.evaluate_decision(dec)
+
+            # Clear mocks to isolate the alert call
+            mock_blackbox = AsyncMock(return_value=True)
+            escalation_service.escalate = mock_blackbox
+
+            # The 20th decision is high (1/20 = 5%)
+            dec_high_1 = Decision(axiom_id="Π.2.1", rationale="Requires human architect review.", criticality="high")
+            await escalation_service.evaluate_decision(dec_high_1)
+
+            # The 21st decision is high (2/21 = 9.5% > 5%)
+            # This should trigger the alert warning and escalate
+            dec_high_2 = Decision(axiom_id="Π.2.1", rationale="Another review is needed here.", criticality="high")
+            await escalation_service.evaluate_decision(dec_high_2)
+
+            # Assert that the alert escalation was called
+            assert mock_blackbox.call_count >= 2
+
+            # Extract arguments of all calls to find our review rate warning
+            called_titles = [call.args[0] for call in mock_blackbox.call_args_list]
+            assert any("Exceeded Review Rate Warning" in title for title in called_titles)
+
+            # Verify ALERT_REVIEW_RATE_EXCEEDED was recorded in the audit trail
+            entries = escalation_service.audit.get_entries()
+            actions = [e["action"] for e in entries]
+            assert "ALERT_REVIEW_RATE_EXCEEDED" in actions

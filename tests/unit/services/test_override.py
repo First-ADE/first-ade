@@ -207,3 +207,44 @@ class TestOverrideService:
         # Verify audit logs
         entries = override_service.audit.get_entries()
         assert any(e["action"] == "OVERRIDE_REVOKED" for e in entries)
+
+    def test_create_override_invalid_scope_type(self, override_service):
+        """Creating an override with an invalid scope type must raise ValueError."""
+        with pytest.raises(ValueError, match="Override scope_type must be one of"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="INVALID_TYPE",
+                scope_value="src/main.py",
+                rationale="This is a very long rationale of more than twenty characters.",
+                created_by="architect-1",
+            )
+
+    def test_create_override_empty_scope_value(self, override_service):
+        """Creating an override with an empty or whitespace scope value must raise ValueError."""
+        with pytest.raises(ValueError, match="Override scope_value cannot be empty"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="FILE",
+                scope_value="   ",
+                rationale="This is a very long rationale of more than twenty characters.",
+                created_by="architect-1",
+            )
+
+    def test_is_override_active_absolute_paths(self, override_service):
+        """Verify that overrides match correctly even when absolute or differently prefixed paths are used."""
+        override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/core/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        # Match using absolute path
+        import os
+
+        workspace_abs = os.path.abspath(".")
+        abs_path = os.path.join(workspace_abs, "src", "core", "main.py")
+
+        assert override_service.is_override_active("Π.1.1", abs_path) is True
+        assert override_service.is_override_active("Π.1.1", "./src/core/main.py") is True

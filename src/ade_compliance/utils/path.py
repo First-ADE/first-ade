@@ -9,8 +9,9 @@ that ensures resolved paths strictly reside inside a designated base directory b
 
 import os
 import re
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
 # Strict regex matching only standard alphanumeric characters, underscores, hyphens, and dots
 SAFE_SEGMENT_PATTERN = re.compile(r"^[a-zA-Z0-9_\-.]+$")
@@ -58,3 +59,73 @@ def sanitize_relative_path(base_dir: Path, input_path: str) -> Optional[Path]:
         return path
     except Exception:
         return None
+
+
+def normalize_project_path(file_path: str) -> str:
+    """Normalize a path to a standardized project-root relative path with forward slashes.
+
+    Examples:
+    - "C:\\Users\\...\\first-ade\\src\\main.py" -> "src/main.py"
+    - "./src/main.py" -> "src/main.py"
+    - "src/main.py" -> "src/main.py"
+    """
+    try:
+        # Convert path to resolved absolute path first to handle all absolute/relative nuances
+        p = Path(file_path).resolve()
+        cwd = Path(".").resolve()
+
+        # If it is inside current directory, make it relative to cwd
+        try:
+            rel = p.relative_to(cwd)
+            return str(rel).replace("\\", "/").strip("/")
+        except ValueError:
+            # Not relative to current directory, fallback to standard normalization
+            pass
+    except Exception:
+        pass
+
+    # Standard fallback normalization
+    normalized = str(file_path).replace("\\", "/").strip("/")
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized
+
+
+@contextmanager
+def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, None, None]:
+    """A cross-platform file-system lock to serialize concurrent file access.
+
+    Creates a temporary lock file (file_path.lock) atomically using O_CREAT | O_EXCL.
+    Retries with exponential backoff if the lock is held, up to the timeout budget.
+    """
+    import time
+
+    lock_path = f"{file_path}.lock"
+    start_time = time.monotonic()
+    acquired = False
+    delay = 0.01
+
+    while time.monotonic() - start_time < timeout:
+        try:
+            # Atomically create the lock file.
+            # On Windows/Unix this atomically fails if the file already exists.
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            acquired = True
+            break
+        except FileExistsError:
+            # Lock is currently held, sleep and retry with exponential backoff
+            time.sleep(delay)
+            delay = min(delay * 2, 0.5)
+        except Exception:
+            # If path doesn't exist or is invalid, do not block indefinitely
+            break
+
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            try:
+                os.remove(lock_path)
+            except Exception:
+                pass

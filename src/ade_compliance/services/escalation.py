@@ -91,6 +91,29 @@ class EscalationService:
             },
         )
 
+        # Check human review rate limit (FR-022 / U2)
+        try:
+            rate = self.get_human_review_rate()
+            if rate > 0.05:
+                from ..observability.logging import logger
+
+                logger.warning(
+                    f"Human Architect review rate is {rate:.2%}, exceeding the 5% threshold budget (FR-022)!"
+                )
+                self.audit.log("ALERT_REVIEW_RATE_EXCEEDED", {"review_rate": rate})
+
+                # Prevent self-triggering loop when logging the rate alert itself
+                if "Exceeded Review Rate Warning" not in decision.rationale:
+                    title = f"[ADE Exceeded Review Rate Warning] Human Architect review rate is {rate:.2%}"
+                    body = (
+                        f"The Human Architect review rate has exceeded the 5% threshold (currently {rate:.2%}).\n\n"
+                        f"Postulate US-5/FR-022 requires keeping the review rate below 5% for scalability.\n"
+                        f"Please audit recent escalations and adjust rules/strictness if necessary."
+                    )
+                    await self.escalate(title, body)
+        except Exception:
+            pass
+
         if decision.requires_human_review:
             title = f"[ADE Escalation] Critical Decision Required: {decision.axiom_id}"
             body = (
