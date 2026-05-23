@@ -63,7 +63,12 @@ class Orchestrator:
             base_dir = Path(".").resolve()
             for file_path in files:
                 try:
-                    path = Path(file_path).resolve()
+                    file_path_str = str(file_path)
+                    # Reject traversal sequences and absolute paths to sanitize the input for CodeQL
+                    if ".." in file_path_str or file_path_str.startswith("/") or file_path_str.startswith("\\") or ":" in file_path_str:
+                        continue
+                    
+                    path = (base_dir / file_path_str).resolve()
                     if not path.is_relative_to(base_dir):
                         continue
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
