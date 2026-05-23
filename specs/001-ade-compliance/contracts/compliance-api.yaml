@@ -139,7 +139,7 @@ paths:
 
   /overrides:
     post:
-      summary: Create override (FR-021, FR-029) — Human Architect only
+      summary: Create override (FR-021) — Human Architect only
       operationId: createOverride
       requestBody:
         required: true
@@ -266,7 +266,7 @@ components:
         rationale: { type: string, minLength: 20 }
         expires_in_days: { type: integer, default: 90 }
         is_permanent: { type: boolean, default: false }
-        permanent_justification: { type: string }
+        permanent_justification: { type: string, description: "Procedural elevated justification (required if is_permanent is True). Must start with SSO-PR- or SSO-SIG-." }
 
     Override:
       type: object
