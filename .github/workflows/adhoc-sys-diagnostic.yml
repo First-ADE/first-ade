@@ -1,0 +1,53 @@
+name: Custom System Diagnostics
+
+on:
+  workflow_dispatch: # Trigger manually
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Run System Diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Print Diagnostic Environment Metrics
+        run: |
+          echo "=== OPERATING SYSTEM DETAILS ==="
+          uname -a
+          
+          echo "=== PYTHON VERSION ==="
+          python --version
+          which python
+          
+          echo "=== UV VERSION ==="
+          uv --version
+          
+          echo "=== PROJECT DEPENDENCY DEFS ==="
+          cat pyproject.toml
+          
+          echo "=== VERIFY LOCKFILE STATS ==="
+          if [ -f "uv.lock" ]; then
+            echo "uv.lock exists. Size: $(wc -c < uv.lock) bytes"
+            echo "uv.lock md5 hash: $(md5sum uv.lock | cut -d' ' -f1)"
+          else
+            echo "WARNING: uv.lock not found!"
+          fi
+          
+          echo "=== COMPLIANCE GATE CONFIG ==="
+          if [ -f ".ade-compliance.yml" ]; then
+            cat .ade-compliance.yml
+          else
+            echo "No .ade-compliance.yml configuration file found."
+          fi

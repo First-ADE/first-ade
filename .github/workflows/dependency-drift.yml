@@ -1,0 +1,33 @@
+name: Dependency Pinning & Drift Guard
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every day at midnight UTC
+  workflow_dispatch: # Allow running manually
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit Pinning & Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Verify Lockfile Drift
+        run: |
+          uv lock --check
+
+      - name: Audit for Pinning Completeness
+        run: |
+          uv pip list --outdated || true
