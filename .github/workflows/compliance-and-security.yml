@@ -52,9 +52,9 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
             git fetch origin "$BASE_REF"
-            commits=$(git log origin/"$BASE_REF"..HEAD --format="%H")
+            commits=$(git log origin/"$BASE_REF"..HEAD --no-merges --format="%H")
           else
-            commits=$(git log -5 --format="%H")
+            commits=$(git log -5 --no-merges --format="%H")
           fi
           
           if [ -z "$commits" ]; then
