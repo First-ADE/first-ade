@@ -20,11 +20,11 @@
 
 ADRs document significant architectural decisions with axiom traceability.
 
-| ADR                                                      | Title                          |
-| -------------------------------------------------------- | ------------------------------ |
-| [ADR-0001](./adr/0001-adopt-axiom-driven-engineering.md) | Adopt Axiom Driven Engineering |
+| [ADR-0001](./decisions/0001-adopt-axiom-driven-engineering.md) | Adopt Axiom Driven Engineering |
+| [ADR-0002](./decisions/0002-test-heuristic-enhancement-and-test-coverage.md) | Test Heuristic Enhancement and Test Coverage |
+| [ADR-0003](./decisions/0003-harden-default-quality-gate-strictness-to-enforce.md) | Harden default quality gate strictness to enforce |
 
-See [ADR Guide](./adr/adr-guide.md) for how to write new ADRs.
+See [ADR Guide](./adr-guide.md) for how to write new ADRs.
 
 ---
 

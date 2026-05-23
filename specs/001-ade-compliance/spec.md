@@ -50,7 +50,7 @@ As an agent, I want verification that tests exist before writing implementation 
 
 **Acceptance**:
 1. No corresponding test file → operation blocked, test creation required
-2. Test files exist but insufficient coverage → violation raised at configured strictness level (default: warn; configurable per .ade-compliance.yml)
+2. Test files exist but insufficient coverage → violation raised at configured strictness level (default: enforce; configurable per .ade-compliance.yml)
 3. Adequate tests exist → operation allowed
 
 ---
