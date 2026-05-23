@@ -4,7 +4,7 @@ Exposes counters and histograms for compliance checks, attestations,
 violations, escalations, and check duration.
 """
 
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 # Counters
 compliance_checks_total = Counter(
@@ -27,6 +27,12 @@ attestation_total = Counter(
 escalation_total = Counter(
     "escalation_total",
     "Total number of escalations triggered",
+)
+
+# Gauges
+escalation_queue_depth = Gauge(
+    "escalation_queue_depth",
+    "Current number of items in the local escalation queue",
 )
 
 # Histograms

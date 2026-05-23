@@ -59,6 +59,27 @@ class Orchestrator:
         # Log findings
         self.audit.log("RUN_COMPLETE", {"violations_count": len(all_violations)})
 
+        # Check consecutive failures (Π.5.3)
+        if len(all_violations) > 0:
+            from ..services.escalation import EscalationService
+            escalation_service = EscalationService(self.config)
+            try:
+                if escalation_service.check_consecutive_failures():
+                    titles = [f"- {v.file_path}: {v.message}" for v in all_violations]
+                    violations_summary = "\n".join(titles)
+                    body = (
+                        "Agent has failed compliance checks 3 consecutive times.\n\n"
+                        "### Current Run Violations:\n"
+                        f"{violations_summary}\n\n"
+                        "Please review and remediate."
+                    )
+                    await escalation_service.escalate(
+                        "[ADE Escalation] 3 Consecutive Agent Failures: Π.5.3",
+                        body
+                    )
+            except Exception:
+                pass
+
         # Create Report
         report = ComplianceReport(
             repo_root=".",
