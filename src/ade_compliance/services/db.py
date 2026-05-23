@@ -50,31 +50,35 @@ class DatabaseManager:
         self._initialized = True
 
     def get_engine_and_factory(self, config: Config) -> Tuple[Engine, sessionmaker]:
-        """Get or create cached SQLAlchemy engine and session factory for the configured path.
+        """Get or create cached SQLAlchemy engine and session factory for the configured path or connection URL.
 
         Automatically handles Windows path normalization, folder creation, and guarantees
         table structure initialization exactly once per database file.
         """
+        db_url = config.global_settings.database_url
         db_path = config.global_settings.audit_path or ":memory:"
-        db_path_str = str(db_path)
+        cache_key = db_url if db_url else str(db_path)
 
         with self.lock:
-            if db_path_str in self.engines_cache:
-                engine, factory = self.engines_cache[db_path_str]
+            if cache_key in self.engines_cache:
+                engine, factory = self.engines_cache[cache_key]
                 return engine, factory
 
             try:
-                if db_path == ":memory:":
-                    url = "sqlite://"
+                if db_url:
+                    url = db_url
                 else:
-                    # Normalize Windows backslashes to forward slashes for SQLite compatibility
-                    path_str = db_path_str.replace("\\", "/")
-                    url = f"sqlite:///{path_str}"
+                    if db_path == ":memory:":
+                        url = "sqlite://"
+                    else:
+                        # Normalize Windows backslashes to forward slashes for SQLite compatibility
+                        path_str = cache_key.replace("\\", "/")
+                        url = f"sqlite:///{path_str}"
 
-                    # Automatically create target parent folders if they do not exist
-                    p = Path(db_path)
-                    if p.parent and not p.parent.exists():
-                        p.parent.mkdir(parents=True, exist_ok=True)
+                        # Automatically create target parent folders if they do not exist
+                        p = Path(db_path)
+                        if p.parent and not p.parent.exists():
+                            p.parent.mkdir(parents=True, exist_ok=True)
 
                 engine = create_engine(url)
 
@@ -82,10 +86,11 @@ class DatabaseManager:
                 run_migrations(engine)
 
                 session_factory = sessionmaker(bind=engine, expire_on_commit=False)
-                self.engines_cache[db_path_str] = (engine, session_factory)
+                self.engines_cache[cache_key] = (engine, session_factory)
                 return engine, session_factory
             except Exception as e:
-                raise DatabaseException(f"Failed to initialize database engine for path '{db_path}': {e}") from e
+                err_target = db_url if db_url else db_path
+                raise DatabaseException(f"Failed to initialize database engine for path/url '{err_target}': {e}") from e
 
     def get_engine(self, config: Config) -> Engine:
         """Retrieve the cached SQLAlchemy engine for the provided config."""
