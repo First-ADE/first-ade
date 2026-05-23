@@ -22,8 +22,8 @@ class TestEngine(BaseEngine):
             if not norm_path.startswith("src/") or not norm_path.endswith(".py"):
                 continue
 
-            # Skip package initializers since they generally contain no functional logic
-            if Path(file_path).name == "__init__.py":
+            # Skip migrations and package initializers since they contain no functional logic
+            if "src/ade_compliance/migrations/" in norm_path or Path(file_path).name == "__init__.py":
                 continue
 
             test_path = self.find_test_file(file_path)

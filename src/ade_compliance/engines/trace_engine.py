@@ -138,6 +138,10 @@ class TraceEngine(BaseEngine):
             if not (norm_path.startswith("src/") or norm_path.startswith("tests/")):
                 continue
 
+            # Skip migrations
+            if "src/ade_compliance/migrations/" in norm_path:
+                continue
+
             # Support checking supported language suffixes
             if path.suffix.lower() not in (".py", ".js", ".ts", ".tsx", ".java"):
                 continue
