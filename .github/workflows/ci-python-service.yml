@@ -83,9 +83,13 @@ jobs:
         uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
 
       - name: Deploy to Cloud Run
+        env:
+          SERVICE_NAME: ${{ inputs.service-name }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ inputs.region }}
         run: |
-          gcloud run deploy ${{ inputs.service-name }} \
+          gcloud run deploy "$SERVICE_NAME" \
             --source . \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --region ${{ inputs.region }} \
+            --project "$GCP_PROJECT_ID" \
+            --region "$REGION" \
             --allow-unauthenticated
