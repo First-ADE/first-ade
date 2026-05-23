@@ -43,6 +43,11 @@ jobs:
           source .venv/bin/activate
           mypy src/
 
+      - name: Run ADE Compliance check
+        run: |
+          source .venv/bin/activate
+          ade-compliance check-all src/
+
       - name: Run tests
         run: |
           source .venv/bin/activate

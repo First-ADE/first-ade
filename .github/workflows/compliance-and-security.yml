@@ -1,0 +1,69 @@
+name: Compliance and Security
+
+on:
+  workflow_call:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e .
+          uv pip install detect-secrets pytest pytest-asyncio pytest-cov
+
+      - name: Run ADE Compliance Gate
+        run: |
+          source .venv/bin/activate
+          ade-compliance check-all src/
+
+      - name: Run detect-secrets scan
+        run: |
+          source .venv/bin/activate
+          detect-secrets scan --exclude-files "tests/.*" > detect-secrets-results.json
+          if grep -q '"results": {' detect-secrets-results.json; then
+            echo "FAIL: Hardcoded secrets detected!"
+            cat detect-secrets-results.json
+            exit 1
+          fi
+          echo "No secrets detected."
+
+      - name: Verify commit signatures
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            commits=$(git log origin/${{ github.base_ref }}..HEAD --format="%H")
+          else
+            commits=$(git log -5 --format="%H")
+          fi
+          
+          if [ -z "$commits" ]; then
+            echo "No commits found to verify."
+            exit 0
+          fi
+          
+          echo "Verifying signature status for commits:"
+          for commit in $commits; do
+            echo "Checking commit: $commit"
+            sig_status=$(git log -1 --format="%G?" $commit)
+            echo "Signature status: $sig_status"
+            if [ "$sig_status" != "G" ] && [ "$sig_status" != "U" ]; then
+              echo "FAIL: Commit $commit is not signed or has an invalid signature!"
+              exit 1
+            fi
+          done
+          echo "All commits have valid signatures."
