@@ -11,7 +11,7 @@ from ade_compliance.services.orchestrator import Orchestrator
 async def test_orchestrator_initialization():
     config = Config()
     config.global_settings.audit_path = ":memory:"
-    
+
     orch = Orchestrator(config)
     assert len(orch.engines) > 0
 
@@ -20,7 +20,7 @@ async def test_orchestrator_initialization():
 async def test_orchestrator_run_empty():
     config = Config()
     config.global_settings.audit_path = ":memory:"
-    
+
     orch = Orchestrator(config)
     report = await orch.run([])
     assert len(report.violations) == 0
