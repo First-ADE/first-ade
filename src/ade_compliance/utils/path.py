@@ -58,3 +58,22 @@ def sanitize_relative_path(base_dir: Path, input_path: str) -> Optional[Path]:
         return path
     except Exception:
         return None
+
+
+def normalize_project_path(file_path: str) -> str:
+    """Normalize a file path to a consistent project-relative format.
+
+    Converts backslashes to forward slashes, strips leading './' prefixes,
+    and removes any leading slashes for uniform path comparison.
+
+    Args:
+        file_path: A file path string (relative or absolute-style).
+
+    Returns:
+        A normalized path string suitable for prefix matching (e.g. 'tests/', 'src/').
+    """
+    p = str(file_path).replace("\\", "/").strip("/")
+    # Strip leading './' if present
+    while p.startswith("./"):
+        p = p[2:]
+    return p

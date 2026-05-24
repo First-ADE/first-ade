@@ -38,6 +38,11 @@ class Orchestrator:
 
             self.engines.append(ADREngine(self.config.engines.adr))
 
+        if self.config.engines.forbidden_api.enabled:
+            from ..engines.forbidden_api_engine import ForbiddenAPIEngine
+
+            self.engines.append(ForbiddenAPIEngine(self.config.engines.forbidden_api))
+
     async def run(self, files: List[str]) -> ComplianceReport:
         all_violations = []
 
