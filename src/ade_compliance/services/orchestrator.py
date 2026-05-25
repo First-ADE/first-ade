@@ -59,14 +59,20 @@ class Orchestrator:
         from ..utils.path import file_system_lock
 
         locked_files = []
+        base_dir = Path(".").resolve()
         with ExitStack() as stack:
             for f in files:
                 try:
-                    # standard file locking on file path
-                    lock_ctx = file_system_lock(f)
+                    safe_path = sanitize_relative_path(base_dir, f)
+                    if not safe_path:
+                        self.audit.log("FILE_LOCK_ACQUIRE_FAILED", {"file_path": f, "error": "invalid_or_unsafe_path"})
+                        continue
+
+                    # standard file locking on sanitized file path
+                    lock_ctx = file_system_lock(str(safe_path))
                     acquired = stack.enter_context(lock_ctx)
                     if acquired:
-                        locked_files.append(f)
+                        locked_files.append(str(safe_path))
                 except Exception as e:
                     self.audit.log("FILE_LOCK_ACQUIRE_FAILED", {"file_path": f, "error": str(e)})
 
@@ -148,3 +154,24 @@ class Orchestrator:
             traceability_matrix=traceability_matrix,
         )
         return report
+
+    async def check_deployment_gate(self, files: list[str]) -> tuple[bool, list]:
+        """Check if deployment should be blocked due to unresolved critical/high violations.
+
+        Returns:
+            Tuple[bool, List]: (allowed, blocking_violations)
+            allowed is False if there are unresolved critical or high violations.
+        """
+        # implements: FR-023
+        # traces_to: Π.3.1
+        report = await self.run(files)
+
+        from ..config import map_severity_to_criticality
+
+        blocking = []
+        for v in report.violations:
+            criticality = map_severity_to_criticality("critical", v.axiom_id)
+            if criticality in ("critical", "high"):
+                blocking.append(v)
+
+        return len(blocking) == 0, blocking
