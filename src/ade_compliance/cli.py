@@ -287,8 +287,6 @@ def prompt_decorate(paths: List[str], config: str):
     markdown = generate_prompt_decorator(cfg, files_list)
     click.echo(markdown)
     sys.exit(0)
-
-
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
 @click.option("--port", default=8080, type=int, help="Port to bind to (default: 8080)")

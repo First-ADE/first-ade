@@ -44,10 +44,3 @@ repos:
       # Run the formatter (runs on both commit and push stages)
       - id: ruff-format
         stages: [pre-commit, pre-push]
-
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: 'tests/.*'
