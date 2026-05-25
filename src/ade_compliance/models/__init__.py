@@ -68,6 +68,7 @@ class TraceLink(BaseModel):
     source: str
     target: str
     type: str
+    symbol: str | None = None
 
 
 class Axiom(BaseModel):

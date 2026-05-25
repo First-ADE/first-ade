@@ -82,6 +82,29 @@ class CreateOverrideRequest(BaseModel):
     permanent_justification: str = ""
 
 
+class PreflightRequest(BaseModel):
+    """Request body for POST /api/v1/compliance/preflight."""
+
+    files: List[str] = []
+
+
+class PreflightResponse(BaseModel):
+    """Response body for POST /api/v1/compliance/preflight."""
+
+    global_strictness: str
+    enforce_coverage: bool
+    min_coverage_threshold: int
+    traceability_required: bool
+    governing_axioms: List[dict]
+    file_constraints: dict
+
+
+class PromptDecorateResponse(BaseModel):
+    """Response body for GET /api/v1/prompts/decorate."""
+
+    markdown: str
+
+
 # --- Dependencies ---
 
 
@@ -95,11 +118,39 @@ def get_override_service(request: Request) -> OverrideService:
     return cast(OverrideService, request.app.state.override_service)
 
 
-def get_current_sso_user(x_sso_user: Optional[str] = Header(None, alias="X-SSO-User")) -> str:
-    """Validate that the request has a valid SSO user identifier in headers."""
-    if not x_sso_user:
-        raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
-    return x_sso_user
+def get_current_sso_user(
+    request: Request,
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+    x_sso_user: Optional[str] = Header(None, alias="X-SSO-User"),
+) -> str:
+    """Validate that the request has a valid SSO user identifier.
+
+    If JWT SSO is enabled via config, validates the Bearer token in Authorization header.
+    Otherwise, falls back to raw X-SSO-User header.
+    """
+    config = getattr(request.app.state, "config", None)
+    if not config:
+        override_service = getattr(request.app.state, "override_service", None)
+        if override_service:
+            config = override_service.config
+
+    if config and config.sso.enabled:
+        if not authorization or not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="Unauthorized: Missing Authorization Bearer token.")
+
+        token = authorization[7:].strip()
+        from ade_compliance.services.crypto import decode_and_validate_jwt
+
+        try:
+            user = decode_and_validate_jwt(token, config)
+            return user
+        except ValueError as e:
+            raise HTTPException(status_code=401, detail=f"Unauthorized: Invalid JWT token: {e}")
+    else:
+        clean_user = (x_sso_user or "").strip()
+        if not clean_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Missing X-SSO-User SSO authentication header.")
+        return clean_user
 
 
 # --- Router ---
@@ -261,6 +312,74 @@ def metrics():
     return Response(content=output, media_type=content_type)
 
 
+@router.post("/api/v1/compliance/preflight", response_model=PreflightResponse)
+def preflight(
+    request: PreflightRequest,
+    attestation_service: AttestationService = Depends(get_attestation_service),
+):
+    """Provide a pre-flight compliance check overview for planned target files."""
+    config = attestation_service.config
+
+    # Log event to audit service
+    attestation_service.audit.log(
+        "PRE_FLIGHT_REQUEST",
+        {"files_count": len(request.files), "files": request.files},
+    )
+
+    from ade_compliance.config import get_axiom_strictness
+
+    # Compile governing axioms based on current config
+    governing_axioms = [
+        {
+            "id": "Π.2.1",
+            "description": "Core business logic MUST maintain >=80% line coverage.",
+            "strictness": get_axiom_strictness(config, "Π.2.1"),
+        },
+        {
+            "id": "Π.3.1",
+            "description": "Complete bidirectional traceability annotations required.",
+            "strictness": get_axiom_strictness(config, "Π.3.1"),
+        },
+    ]
+
+    # Compile specific file constraints
+    file_constraints = {}
+    for f in request.files:
+        is_core = (
+            any(part in f.lower() for part in ["models", "engines", "services", "config", "db"])
+            and "tests" not in f.lower()
+        )
+        strictness = "enforce" if is_core else config.global_settings.strictness
+        file_constraints[f] = {
+            "is_core": is_core,
+            "strictness": strictness,
+            "required_annotations": ["implements", "traces_to"] if config.engines.trace.enabled else [],
+        }
+
+    return PreflightResponse(
+        global_strictness=config.global_settings.strictness,
+        enforce_coverage=config.engines.test.enabled,
+        min_coverage_threshold=config.engines.test.min_coverage or 80,
+        traceability_required=config.engines.trace.enabled,
+        governing_axioms=governing_axioms,
+        file_constraints=file_constraints,
+    )
+
+
+@router.get("/api/v1/prompts/decorate", response_model=PromptDecorateResponse)
+def prompt_decorate(
+    files: Optional[List[str]] = Query(default=None),
+    attestation_service: AttestationService = Depends(get_attestation_service),
+):
+    """Retrieve highly structured Markdown prompt block enforcing active constraints."""
+    from ade_compliance.utils.prompts import generate_prompt_decorator
+
+    config = attestation_service.config
+    markdown = generate_prompt_decorator(config, files)
+
+    return PromptDecorateResponse(markdown=markdown)
+
+
 # --- App Factory ---
 
 
@@ -300,6 +419,7 @@ def create_app(
     # Attach services to app state for dependency injection
     app.state.attestation_service = attestation_service
     app.state.override_service = override_service
+    app.state.config = config
 
     # Include modular router
     app.include_router(router)
