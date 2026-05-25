@@ -130,3 +130,36 @@ class AuditService:
                 "overrides_count": overrides_count,
                 "overrides_by_day": overrides_by_day,
             }
+
+    def verify_chain(self) -> tuple[bool, List[str]]:
+        """Verify the cryptographic integrity of the audit log chain.
+
+        Returns:
+            Tuple[bool, List[str]]: (success, list_of_errors)
+        """
+        errors = []
+        with db_session(self.config) as session:
+            entries = session.query(AuditEntry).order_by(AuditEntry.id.asc()).all()
+            expected_prev_hash = "0" * 64
+
+            for entry in entries:
+                # Verify link to previous entry
+                if entry.previous_hash != expected_prev_hash:
+                    errors.append(
+                        f"Entry #{entry.id} ({entry.action}): previous_hash '{entry.previous_hash}' "
+                        f"does not match expected previous hash '{expected_prev_hash}'"
+                    )
+
+                # Recalculate hash
+                payload = f"{entry.timestamp.isoformat()}{entry.action}{entry.details}{entry.previous_hash}"
+                calculated_hash = hashlib.sha256(payload.encode()).hexdigest()
+
+                if entry.hash != calculated_hash:
+                    errors.append(
+                        f"Entry #{entry.id} ({entry.action}): hash '{entry.hash}' "
+                        f"does not match calculated hash '{calculated_hash}'"
+                    )
+
+                expected_prev_hash = entry.hash
+
+        return len(errors) == 0, errors

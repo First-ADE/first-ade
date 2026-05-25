@@ -57,7 +57,7 @@ class Config(BaseModel):
     model_config = {"extra": "ignore", "populate_by_name": True}
 
 
-def get_axiom_strictness(config: Config, axiom_id: str) -> StrictnessLevel:
+def get_axiom_strictness(config: Config, axiom_id: str, file_path: Optional[str] = None) -> StrictnessLevel:
     """Cascading strictness lookup:
     1. Check specific axiom strictness (in config.axioms)
     2. Check per-engine strictness based on prefix
