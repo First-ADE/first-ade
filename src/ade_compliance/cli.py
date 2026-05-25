@@ -55,6 +55,7 @@ def _run_checks(
     run_test: bool = True,
     run_trace: bool = True,
     run_adr: bool = True,
+    run_forbidden_api: bool = True,
 ) -> Tuple[ComplianceReport, Config]:
     # Expand paths
     files = []
@@ -81,6 +82,7 @@ def _run_checks(
     cfg.engines.trace.enabled = cfg.engines.trace.enabled and run_trace
     if hasattr(cfg.engines, "adr"):
         cfg.engines.adr.enabled = cfg.engines.adr.enabled and run_adr
+    cfg.engines.forbidden_api.enabled = cfg.engines.forbidden_api.enabled and run_forbidden_api
 
     # Run Orchestrator
     orchestrator = Orchestrator(cfg)
@@ -133,7 +135,9 @@ def check_all(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_spec(paths: List[str], config: str):
     """Run specification compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=False, run_trace=False, run_adr=False)
+    report, cfg = _run_checks(
+        paths, config, run_spec=True, run_test=False, run_trace=False, run_adr=False, run_forbidden_api=False
+    )
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -144,7 +148,9 @@ def check_spec(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_test(paths: List[str], config: str):
     """Run test compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=True, run_trace=False, run_adr=False)
+    report, cfg = _run_checks(
+        paths, config, run_spec=False, run_test=True, run_trace=False, run_adr=False, run_forbidden_api=False
+    )
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -155,7 +161,9 @@ def check_test(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_traceability(paths: List[str], config: str):
     """Run traceability checks and generate matrix."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False)
+    report, cfg = _run_checks(
+        paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False, run_forbidden_api=False
+    )
 
     # Print Traceability Matrix
     click.echo("\n--- Traceability Matrix ---")
@@ -185,10 +193,33 @@ def check_traceability(paths: List[str], config: str):
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_adr(paths: List[str], config: str):
     """Run ADR compliance and architectural change checks."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=True)
+    report, cfg = _run_checks(
+        paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=True, run_forbidden_api=False
+    )
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
+
+
+@main.command(name="check-forbidden-apis")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_forbidden_apis(paths: List[str], config: str):
+    """Scan test files for forbidden API calls violating test determinism (FR-015)."""
+    report, cfg = _run_checks(
+        paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=False, run_forbidden_api=True
+    )
+
+    forbidden_violations = [v for v in report.violations if v.axiom_id == "Π.2.2"]
+    if forbidden_violations:
+        click.echo(f"\nFound {len(forbidden_violations)} forbidden API call(s) in test files:")
+        for v in forbidden_violations:
+            click.echo(f"  - {v.file_path}: {v.message}")
+        exit_code = determine_exit_code(forbidden_violations, cfg)
+        sys.exit(exit_code)
+
+    click.echo("\nNo forbidden API calls detected. Test determinism check passed!")
+    sys.exit(0)
 
 
 @main.command(name="generate-report")
