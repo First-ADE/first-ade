@@ -18,6 +18,7 @@ def test_cli_subcommands_registered():
     assert "check-adr" in result.output
     assert "generate-report" in result.output
     assert "override" in result.output
+    assert "verify-audit-trail" in result.output
 
 
 @pytest.mark.parametrize(
@@ -114,3 +115,28 @@ def test_override_cli_validation_permanent_requires_justification():
     )
     assert result.exit_code != 0
     assert "Permanent justification is required" in result.output
+
+
+def test_verify_audit_trail_cli_success():
+    """Verify that verify-audit-trail returns success message and exits 0."""
+    from unittest.mock import patch
+
+    with patch("ade_compliance.services.audit.AuditService.verify_chain", return_value=(True, [])):
+        runner = CliRunner()
+        result = runner.invoke(main, ["verify-audit-trail"])
+        assert result.exit_code == 0
+        assert "fully intact and verified" in result.output
+
+
+def test_verify_audit_trail_cli_tampered():
+    """Verify that verify-audit-trail reports errors and exits 1 on failure."""
+    from unittest.mock import patch
+
+    with patch(
+        "ade_compliance.services.audit.AuditService.verify_chain", return_value=(False, ["Chain broken at entry 3"])
+    ):
+        runner = CliRunner()
+        result = runner.invoke(main, ["verify-audit-trail"])
+        assert result.exit_code == 1
+        assert "Tampering or chain corruption detected" in result.output
+        assert "Chain broken at entry 3" in result.output
