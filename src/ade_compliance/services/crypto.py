@@ -66,77 +66,68 @@ def decode_and_validate_jwt(token: str, config) -> str:
     Returns:
         str: The authenticated identity (extracted from configured identity_claim).
     """
-    import base64
-    import hashlib
-    import hmac
-    import json
-    import time
-
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.primitives.asymmetric import padding
-    from cryptography.hazmat.primitives.serialization import load_pem_public_key
-
-    def base64url_decode(s: str) -> bytes:
-        s = s.strip()
-        rem = len(s) % 4
-        if rem > 0:
-            s += "=" * (4 - rem)
-        return base64.urlsafe_b64decode(s.encode("utf-8"))
-
-    parts = token.split(".")
-    if len(parts) != 3:
-        raise ValueError("Invalid JWT format: must contain exactly three parts separated by dots.")
-
-    header_b64, payload_b64, signature_b64 = parts
-    signing_input = f"{header_b64}.{payload_b64}"
+    import jwt
+    from jwt.exceptions import (
+        DecodeError,
+        ExpiredSignatureError,
+        ImmatureSignatureError,
+        InvalidSignatureError,
+        InvalidTokenError,
+    )
 
     try:
-        header = json.loads(base64url_decode(header_b64).decode("utf-8"))
-        payload = json.loads(base64url_decode(payload_b64).decode("utf-8"))
-        signature = base64url_decode(signature_b64)
-    except Exception as e:
-        raise ValueError(f"Failed to decode JWT base64 segments: {e}") from e
+        parts = token.split(".")
+        if len(parts) != 3:
+            raise ValueError("Invalid JWT format: must contain exactly three parts separated by dots.")
 
-    alg = header.get("alg")
-    if not alg:
-        raise ValueError("JWT header is missing 'alg' parameter.")
-
-    if alg not in config.sso.algorithms:
-        raise ValueError(f"JWT algorithm '{alg}' is not permitted by configuration.")
-
-    # 1. Signature Verification
-    if alg == "HS256":
-        if not config.sso.jwt_secret:
-            raise ValueError("JWT configuration error: 'jwt_secret' must be defined to verify HS256 tokens.")
-        secret_bytes = config.sso.jwt_secret.encode("utf-8")
-        expected_sig = hmac.new(secret_bytes, signing_input.encode("utf-8"), hashlib.sha256).digest()
-        if not hmac.compare_digest(signature, expected_sig):
-            raise ValueError("JWT signature verification failed (HS256).")
-
-    elif alg == "RS256":
-        if not config.sso.jwt_public_key:
-            raise ValueError("JWT configuration error: 'jwt_public_key' must be defined to verify RS256 tokens.")
         try:
-            pub_key = load_pem_public_key(config.sso.jwt_public_key.encode("utf-8"))
-            pub_key.verify(signature, signing_input.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
+            header = jwt.get_unverified_header(token)
         except Exception as e:
-            raise ValueError(f"JWT signature verification failed (RS256): {e}") from e
-    else:
-        raise ValueError(f"Unsupported signature verification for algorithm '{alg}'.")
+            raise ValueError(f"Failed to decode JWT base64 segments: {e}") from e
 
-    # 2. Claim Validation
-    now = int(time.time())
-    if "exp" in payload:
-        if now >= int(payload["exp"]):
-            raise ValueError("JWT has expired (exp claim validation failed).")
+        alg = header.get("alg")
+        if not alg:
+            raise ValueError("JWT header is missing 'alg' parameter.")
 
-    if "nbf" in payload:
-        if now < int(payload["nbf"]):
-            raise ValueError("JWT is not active yet (nbf claim validation failed).")
+        if alg not in config.sso.algorithms:
+            raise ValueError(f"JWT algorithm '{alg}' is not permitted by configuration.")
 
-    # 3. Identity Extraction
-    claim_name = config.sso.identity_claim
-    if claim_name not in payload:
-        raise ValueError(f"JWT is missing the required identity claim '{claim_name}'.")
+        if alg == "HS256":
+            if not config.sso.jwt_secret:
+                raise ValueError("JWT configuration error: 'jwt_secret' must be defined to verify HS256 tokens.")
+            key = config.sso.jwt_secret
+        elif alg == "RS256":
+            if not config.sso.jwt_public_key:
+                raise ValueError("JWT configuration error: 'jwt_public_key' must be defined to verify RS256 tokens.")
+            key = config.sso.jwt_public_key
+        else:
+            raise ValueError(f"Unsupported signature verification for algorithm '{alg}'.")
 
-    return str(payload[claim_name])
+        import warnings
+
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=jwt.InsecureKeyLengthWarning)
+                payload = jwt.decode(token, key, algorithms=[alg])
+        except ExpiredSignatureError as e:
+            raise ValueError("JWT has expired (exp claim validation failed).") from e
+        except ImmatureSignatureError as e:
+            raise ValueError("JWT is not active yet (nbf claim validation failed).") from e
+        except (InvalidSignatureError, DecodeError) as e:
+            if alg == "HS256":
+                raise ValueError("JWT signature verification failed (HS256).") from e
+            else:
+                raise ValueError(f"JWT signature verification failed (RS256): {e}") from e
+        except InvalidTokenError as e:
+            raise ValueError(f"JWT verification failed: {e}") from e
+
+        claim_name = config.sso.identity_claim
+        if claim_name not in payload:
+            raise ValueError(f"JWT is missing the required identity claim '{claim_name}'.")
+
+        return str(payload[claim_name])
+
+    except Exception as e:
+        if isinstance(e, ValueError):
+            raise
+        raise ValueError(str(e)) from e
