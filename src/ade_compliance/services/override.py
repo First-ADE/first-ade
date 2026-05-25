@@ -78,7 +78,12 @@ class OverrideService:
         permanent_justification: str = "",
     ) -> Override:
         """Create and persist a violation override."""
-        # Validate constraints
+        if scope_type not in ("FILE", "DIRECTORY", "COMPONENT"):
+            raise ValueError("Override scope_type must be one of 'FILE', 'DIRECTORY', 'COMPONENT'.")
+
+        if not scope_value or not scope_value.strip():
+            raise ValueError("Override scope_value cannot be empty or whitespace.")
+
         if len(rationale) < 20:
             raise ValueError("Rationale must be at least 20 characters long.")
 
@@ -86,7 +91,22 @@ class OverrideService:
             justification = (permanent_justification or "").strip()
             if not justification:
                 raise ValueError("permanent_justification is required when is_permanent is True")
-            if not (justification.startswith("SSO-PR-") or justification.startswith("SSO-SIG-")):
+            if justification.startswith("SSO-SIG-"):
+                sig_b64 = justification[len("SSO-SIG-") :].strip()
+                from ..services.crypto import verify_sso_signature
+
+                if not verify_sso_signature(created_by, sig_b64, rationale):
+                    raise ValueError(
+                        f"Cryptographic attestation failed: Invalid signature in "
+                        f"permanent justification for architect '{created_by}'."
+                    )
+            elif justification.startswith("SSO-PR-"):
+                pr_id = justification[len("SSO-PR-") :].strip()
+                if not pr_id:
+                    raise ValueError(
+                        "SSO-PR- permanent justification must include a non-empty Peer Review ID."
+                    )
+            else:
                 raise ValueError(
                     "permanent_justification must start with either 'SSO-PR-' or 'SSO-SIG-' "
                     "for elevated justification validation."
@@ -170,12 +190,13 @@ class OverrideService:
 
     def is_override_active(self, axiom_id: str, file_path: str) -> bool:
         """Check if an active override covers this axiom ID and file path."""
+        from ..utils.path import normalize_project_path
+
+        p = normalize_project_path(file_path)
         active_list = self.get_active_overrides()
         for o in active_list:
             if o.axiom_id == axiom_id:
-                # Match path against scope
-                p = file_path.replace("\\", "/").strip("/")
-                sv = o.scope_value.replace("\\", "/").strip("/")
+                sv = normalize_project_path(o.scope_value)
 
                 if o.scope_type == "FILE":
                     if p == sv:
