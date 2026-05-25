@@ -90,12 +90,12 @@ def test_matrix_generation(trace_engine):
     matrix = trace_engine.generate_matrix(all_links)
 
     assert "src/a.py" in matrix
-    assert matrix["src/a.py"]["implements"] == ["FR-001"]
-    assert matrix["src/a.py"]["traces_to"] == ["Π.3.1"]
+    assert matrix["src/a.py"]["implements"] == ["FR-001 (a)"]
+    assert matrix["src/a.py"]["traces_to"] == ["Π.3.1 (a)"]
 
     assert "tests/test_a.py" in matrix
-    assert matrix["tests/test_a.py"]["validates"] == ["src/a.py"]
-    assert matrix["tests/test_a.py"]["implements"] == ["FR-001"]
+    assert matrix["tests/test_a.py"]["validates"] == ["src/a.py (test_a)"]
+    assert matrix["tests/test_a.py"]["implements"] == ["FR-001 (test_a)"]
 
 
 @pytest.mark.asyncio

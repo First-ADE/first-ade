@@ -5,7 +5,6 @@
 
 Provides violating rule exception overrides with scope matching, rationale validation,
 audit trail logging, and local SQLite DB storage.
-Consolidates engine setup using the centralized database manager.
 """
 
 import logging
@@ -16,9 +15,10 @@ from typing import List
 from sqlalchemy import Boolean, Column, DateTime, String
 
 from ..config import Config
+from ..exceptions import CryptoAttestationException, ValidationException
 from ..models.decision import Override
-from ..services.audit import AuditService
-from .db import Base, db_session
+from .base import BaseService
+from .db import Base
 
 logger = logging.getLogger(__name__)
 
@@ -40,31 +40,14 @@ class OverrideEntry(Base):
     expiry_notified = Column(Boolean, default=False)
 
 
-class OverrideService:
+class OverrideService(BaseService):
+    """Service to create, track, and validate active compliance overrides."""
+
     def __init__(self, config: Config):
-        self.config = config
-        self.audit = AuditService(config)
-
-        from sqlalchemy.orm import sessionmaker
-
-        from .db import Base as db_Base
-        from .db import get_engine
-
-        self.engine = get_engine(config)
-        db_Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
-
-        # Self-healing migration for legacy databases to insert columns if not present
-        try:
-            from sqlalchemy import text
-
-            with self.engine.connect() as conn:
-                conn.execute(text("ALTER TABLE override_log ADD COLUMN expiry_notified BOOLEAN DEFAULT 0"))
-                conn.commit()
-        except Exception as e:
-            # This is an optional legacy self-healing migration and may fail (e.g. if the column already exists).
-            # Log at debug level to keep it observable but non-disruptive.
-            logger.debug("Optional migration 'expiry_notified' column check failed/skipped: %s", e)
+        super().__init__(config)
+        self.engine = self.db_manager.get_engine(self.config)
+        _, session_factory = self.db_manager.get_engine_and_factory(self.config)
+        self.Session = session_factory
 
     def create_override(
         self,
@@ -80,14 +63,38 @@ class OverrideService:
         """Create and persist a violation override."""
         # Validate constraints
         if len(rationale) < 20:
-            raise ValueError("Rationale must be at least 20 characters long.")
+            raise ValidationException("Rationale must be at least 20 characters long.")
+
+        # Validate scope type
+        if scope_type not in ("FILE", "DIRECTORY", "COMPONENT"):
+            raise ValidationException("Override scope_type must be one of 'FILE', 'DIRECTORY', or 'COMPONENT'.")
+
+        # Validate and clean scope value
+        scope_value_clean = (scope_value or "").strip().replace("\\", "/").strip("/")
+        if not scope_value_clean:
+            raise ValidationException("Override scope_value cannot be empty or whitespace-only.")
 
         if is_permanent:
             justification = (permanent_justification or "").strip()
             if not justification:
-                raise ValueError("permanent_justification is required when is_permanent is True")
-            if not (justification.startswith("SSO-PR-") or justification.startswith("SSO-SIG-")):
-                raise ValueError(
+                raise ValidationException("permanent_justification is required when is_permanent is True")
+            if justification.startswith("SSO-SIG-"):
+                sig_b64 = justification[len("SSO-SIG-") :].strip()
+                from ..services.crypto import verify_sso_signature
+
+                if not verify_sso_signature(created_by, sig_b64, rationale):
+                    raise CryptoAttestationException(
+                        f"Cryptographic attestation failed: Invalid signature in "
+                        f"permanent justification for architect '{created_by}'."
+                    )
+            elif justification.startswith("SSO-PR-"):
+                pr_id = justification[len("SSO-PR-") :].strip()
+                if not pr_id:
+                    raise ValidationException(
+                        "SSO-PR- permanent justification must include a non-empty Peer Review ID."
+                    )
+            else:
+                raise ValidationException(
                     "permanent_justification must start with either 'SSO-PR-' or 'SSO-SIG-' "
                     "for elevated justification validation."
                 )
@@ -99,7 +106,7 @@ class OverrideService:
             id=override_id,
             axiom_id=axiom_id,
             scope_type=scope_type,
-            scope_value=scope_value,
+            scope_value=scope_value_clean,
             rationale=rationale,
             created_by=created_by,
             expires_at=expires_at,
@@ -107,7 +114,7 @@ class OverrideService:
             permanent_justification=permanent_justification if is_permanent else None,
         )
 
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             session.add(entry)
             # Fetch created_at populated by DB default
             created_at = entry.created_at or datetime.now(timezone.utc).replace(tzinfo=None)
@@ -119,7 +126,7 @@ class OverrideService:
                 "id": override_id,
                 "axiom_id": axiom_id,
                 "scope_type": scope_type,
-                "scope_value": scope_value,
+                "scope_value": scope_value_clean,
                 "rationale": rationale,
                 "created_by": created_by,
                 "expires_at": expires_at.isoformat(),
@@ -132,7 +139,7 @@ class OverrideService:
             id=override_id,
             axiom_id=axiom_id,
             scope_type=scope_type,
-            scope_value=scope_value,
+            scope_value=scope_value_clean,
             rationale=rationale,
             created_by=created_by,
             created_at=created_at,
@@ -143,7 +150,7 @@ class OverrideService:
 
     def get_active_overrides(self) -> List[Override]:
         """Retrieve all currently active (non-expired and non-revoked) overrides."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             entries = session.query(OverrideEntry).filter(OverrideEntry.revoked_at.is_(None)).all()
 
@@ -170,11 +177,14 @@ class OverrideService:
 
     def is_override_active(self, axiom_id: str, file_path: str) -> bool:
         """Check if an active override covers this axiom ID and file path."""
+        from ..utils.path import normalize_project_path
+
+        p = normalize_project_path(file_path)
         active_list = self.get_active_overrides()
+
         for o in active_list:
             if o.axiom_id == axiom_id:
                 # Match path against scope
-                p = file_path.replace("\\", "/").strip("/")
                 sv = o.scope_value.replace("\\", "/").strip("/")
 
                 if o.scope_type == "FILE":
@@ -190,7 +200,7 @@ class OverrideService:
 
     def revoke_override(self, override_id: str) -> bool:
         """Manually revoke a compliance override."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             entry = session.query(OverrideEntry).filter(OverrideEntry.id == override_id).first()
             if not entry:
                 return False
@@ -210,7 +220,7 @@ class OverrideService:
 
     def check_expiring_overrides(self) -> List[Override]:
         """Check for active overrides expiring in <= 7 days and notify via EscalationService."""
-        with db_session(self.config) as session:
+        with self.db_manager.session(self.config) as session:
             now = datetime.now(timezone.utc).replace(tzinfo=None)
             seven_days_from_now = now + timedelta(days=7)
 

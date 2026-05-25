@@ -13,14 +13,17 @@ class TestEngine(BaseEngine):
         if not self.should_run():
             return []
 
+        from ..utils.path import normalize_project_path
+
         violations = []
         for file_path in files:
+            norm_path = normalize_project_path(file_path)
             # Only check impl files (heuristic: in src/ and .py)
-            if not file_path.startswith("src/") or not file_path.endswith(".py"):
+            if not norm_path.startswith("src/") or not norm_path.endswith(".py"):
                 continue
 
-            # Skip package initializers since they generally contain no functional logic
-            if Path(file_path).name == "__init__.py":
+            # Skip migrations and package initializers since they contain no functional logic
+            if "src/ade_compliance/migrations/" in norm_path or Path(file_path).name == "__init__.py":
                 continue
 
             test_path = self.find_test_file(file_path)
@@ -29,8 +32,8 @@ class TestEngine(BaseEngine):
                 violations.append(
                     Violation(
                         axiom_id="Π.2.1",
-                        file_path=file_path,
-                        message=f"Missing test file for {file_path}",
+                        file_path=norm_path,
+                        message=f"Missing test file for {norm_path}",
                         state=ViolationState.NEW,
                     )
                 )
@@ -47,8 +50,8 @@ class TestEngine(BaseEngine):
                         if "time.sleep" in content or "requests.get" in content:
                             violations.append(
                                 Violation(
-                                    axiom_id="Π.3.1",
-                                    file_path=test_path,
+                                    axiom_id="Π.2.2",
+                                    file_path=normalize_project_path(test_path),
                                     message="Non-deterministic code detected (sleep/network)",
                                     state=ViolationState.NEW,
                                 )
