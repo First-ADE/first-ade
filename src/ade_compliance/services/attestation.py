@@ -13,17 +13,16 @@ from ..config import Config
 from ..models.axiom import Violation
 from ..models.decision import Attestation
 from ..models.report import ComplianceReport
-from ..services.audit import AuditService
+from .base import BaseService
 
 CONFIDENCE_THRESHOLD = 0.7
 
 
-class AttestationService:
+class AttestationService(BaseService):
     """Service for recording agent attestations and running pre-execution checks."""
 
     def __init__(self, config: Config):
-        self.config = config
-        self.audit = AuditService(config)
+        super().__init__(config)
 
     def record(
         self,

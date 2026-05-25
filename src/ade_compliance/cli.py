@@ -33,17 +33,19 @@ def determine_exit_code(violations: List, config: Config) -> int:
         axiom_id = v.axiom_id or ""
         strictness = get_axiom_strictness(config, axiom_id)
 
-        if strictness == "enforce":
-            has_enforce = True
-        elif strictness == "warn":
-            has_warn = True
+        match strictness:
+            case "enforce":
+                has_enforce = True
+            case "warn":
+                has_warn = True
 
-    if has_enforce:
-        return 1
-    if has_warn:
-        return 2
-
-    return 0
+    match (has_enforce, has_warn):
+        case (True, _):
+            return 1
+        case (False, True):
+            return 2
+        case _:
+            return 0
 
 
 def _run_checks(
@@ -248,6 +250,43 @@ def override(
     except Exception as e:
         click.echo(f"Error creating override: {e}", err=True)
         sys.exit(3)
+
+
+@main.command(name="verify-audit-trail")
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def verify_audit_trail(config: str):
+    """Verify the cryptographic integrity of the compliance audit trail."""
+    cfg = load_config(Path(config))
+    from ade_compliance.services.audit import AuditService
+
+    try:
+        svc = AuditService(cfg)
+        match svc.verify_chain():
+            case (True, _):
+                click.echo("Success: Compliance audit trail is fully intact and verified.")
+                sys.exit(0)
+            case (False, errors):
+                click.echo("Error: Tampering or chain corruption detected in audit trail!", err=True)
+                for err in errors:
+                    click.echo(f"  - {err}", err=True)
+                sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error executing verification check: {e}", err=True)
+        sys.exit(2)
+
+
+@main.command(name="prompt-decorate")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def prompt_decorate(paths: List[str], config: str):
+    """Retrieve highly structured Markdown prompt block enforcing active constraints."""
+    cfg = load_config(Path(config))
+    from ade_compliance.utils.prompts import generate_prompt_decorator
+
+    files_list = list(paths) if paths else None
+    markdown = generate_prompt_decorator(cfg, files_list)
+    click.echo(markdown)
+    sys.exit(0)
 
 
 @main.command()
