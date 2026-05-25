@@ -39,6 +39,7 @@ class Engines(BaseModel):
     test: EngineConfig = EngineConfig()
     trace: EngineConfig = Field(default_factory=EngineConfig, alias="traceability", validation_alias="traceability")
     adr: EngineConfig = EngineConfig()
+    forbidden_api: EngineConfig = EngineConfig()
 
     model_config = {"extra": "ignore", "populate_by_name": True}
 
@@ -161,6 +162,8 @@ def get_axiom_strictness(config: Config, axiom_id: str) -> StrictnessLevel:
     engine_strictness: Optional[StrictnessLevel] = None
     if axiom_id.startswith("Π.1"):
         engine_strictness = config.engines.spec.strictness
+    elif axiom_id == "Π.2.2":
+        engine_strictness = config.engines.forbidden_api.strictness
     elif axiom_id.startswith("Π.2"):
         engine_strictness = config.engines.test.strictness
     elif axiom_id.startswith("Π.3"):
