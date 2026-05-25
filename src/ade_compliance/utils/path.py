@@ -69,74 +69,40 @@ def normalize_project_path(file_path: str) -> str:
     - "./src/main.py" -> "src/main.py"
     - "src/main.py" -> "src/main.py"
     """
-    # Pure string-based normalization without using any os.path or pathlib functions
-    # on the user-controlled input file_path. This breaks all CodeQL path traversal flows.
     try:
-        # Normalize slashes first
-        normalized = str(file_path).replace("\\", "/").strip()
+        # Convert path to resolved absolute path first to handle all absolute/relative nuances
+        p = Path(file_path).resolve()
+        cwd = Path(".").resolve()
 
-        # Get the current working directory using a static, safe resolution
-        cwd = str(Path(".").resolve()).replace("\\", "/")
-
-        # If the input path starts with the CWD, strip the CWD part
-        if normalized.startswith(cwd + "/"):
-            normalized = normalized[len(cwd) + 1 :]
-        elif normalized == cwd:
-            normalized = ""
-
-        # Normalize relative components at the start
-        normalized = normalized.strip("/")
-        if normalized.startswith("./"):
-            normalized = normalized[2:]
-
-        # Clean trailing/leading slashes
-        return normalized.strip("/")
+        # If it is inside current directory, make it relative to cwd
+        try:
+            rel = p.relative_to(cwd)
+            return str(rel).replace("\\", "/").strip("/")
+        except ValueError:
+            # Not relative to current directory, fallback to standard normalization
+            pass
     except Exception:
-        # Graceful basic fallback
-        normalized = str(file_path).replace("\\", "/").strip("/")
-        if normalized.startswith("./"):
-            normalized = normalized[2:]
-        return normalized
+        # Path resolution may fail for invalid/inaccessible inputs; intentionally
+        # fall back to string-based normalization below to keep this utility non-throwing.
+        pass
+
+    # Standard fallback normalization
+    normalized = str(file_path).replace("\\", "/").strip("/")
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized
 
 
 @contextmanager
 def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, None, None]:
     """A cross-platform file-system lock to serialize concurrent file access.
 
-    Creates a temporary lock file atomically using O_CREAT | O_EXCL.
+    Creates a temporary lock file (file_path.lock) atomically using O_CREAT | O_EXCL.
     Retries with exponential backoff if the lock is held, up to the timeout budget.
     """
-    import hashlib
     import time
 
-    # Securely compute lock path using a SHA-256 hash of the normalized path.
-    # We break the CodeQL taint-tracking flow by converting the SHA-256 hex digest
-    # to an integer and back to hex, which strips any potential input taint.
-    try:
-        normalized = normalize_project_path(file_path)
-        path_hash = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
-        safe_hash = hex(int(path_hash, 16))[2:]
-        base_dir = Path(".").resolve()
-        lock_path = str(base_dir / f"lock_{safe_hash}.lock")
-    except Exception:
-        # Fail-safe robust fallback using only hashed raw input string
-        try:
-            path_hash = hashlib.sha256(str(file_path).encode("utf-8")).hexdigest()
-            safe_hash = hex(int(path_hash, 16))[2:]
-            base_dir = Path(".").resolve()
-            lock_path = str(base_dir / f"lock_{safe_hash}.lock")
-        except Exception:
-            # Extremely safe minimal fallback if encoding/hashing fails
-            # We hash the basename to be completely safe and avoid direct path injection
-            try:
-                safe_base = re.sub(r"[^a-zA-Z0-9_\-.]", "", os.path.basename(file_path))
-                path_hash = hashlib.sha256(safe_base.encode("utf-8", errors="ignore")).hexdigest()
-                safe_hash = hex(int(path_hash, 16))[2:]
-                lock_path = str(Path(".").resolve() / f"lock_fallback_{safe_hash}.lock")
-            except Exception:
-                # Absolute static fail-safe fallback that has zero relation to user input
-                lock_path = str(Path(".").resolve() / "lock_fallback_static.lock")
-
+    lock_path = f"{file_path}.lock"
     start_time = time.monotonic()
     acquired = False
     delay = 0.01
@@ -163,7 +129,9 @@ def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, N
         if acquired:
             try:
                 os.remove(lock_path)
-            except Exception:
-                # Swallowing file removal errors during teardown is expected and safe
-                # (e.g. if the lock file was already programmatically deleted).
+            except FileNotFoundError:
+                # Lock file may already be removed by a concurrent cleanup path; ignore safely.
+                pass
+            except OSError:
+                # Cleanup should not raise and mask caller behavior; best-effort lock release only.
                 pass

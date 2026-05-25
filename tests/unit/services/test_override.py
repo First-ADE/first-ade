@@ -303,3 +303,44 @@ class TestOverrideService:
 
         assert override_service.is_override_active("Π.1.1", abs_path) is True
         assert override_service.is_override_active("Π.1.1", "./src/core/main.py") is True
+
+    def test_override_audit_trail_logged(self, override_service):
+        """T052: Create an override, then verify audit_log table has an OVERRIDE_RECORDED entry matching the override ID."""
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        entries = override_service.audit.get_entries()
+        override_entries = [e for e in entries if e["action"] == "OVERRIDE_RECORDED"]
+
+        assert len(override_entries) >= 1
+        # Verify the audit entry details contain the override ID
+        matched = [e for e in override_entries if e["details"].get("id") == o.id]
+        assert len(matched) == 1, f"Expected audit entry with id={o.id}, got: {override_entries}"
+
+    def test_revoke_override_audit_trail(self, override_service):
+        """T052: Create and revoke an override, verify OVERRIDE_REVOKED audit entry exists."""
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        # Revoke the override
+        result = override_service.revoke_override(o.id)
+        assert result is True
+
+        # Verify OVERRIDE_REVOKED audit entry exists
+        entries = override_service.audit.get_entries()
+        revoke_entries = [e for e in entries if e["action"] == "OVERRIDE_REVOKED"]
+
+        assert len(revoke_entries) >= 1
+        # Verify the revoke audit entry references the override ID
+        matched = [e for e in revoke_entries if e["details"].get("id") == o.id]
+        assert len(matched) == 1, f"Expected OVERRIDE_REVOKED entry with id={o.id}, got: {revoke_entries}"

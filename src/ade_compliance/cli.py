@@ -1,37 +1,37 @@
-# implements: FR-011
+# implements: FR-008
 # traces_to: Π.3.1
 
-import asyncio
+"""CLI Command-Line Entry Point for ADE Compliance Auditor."""
+
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 import click
 
-from ade_compliance.config import Config, get_axiom_strictness, load_config
-from ade_compliance.models.report import ComplianceReport
-from ade_compliance.services.orchestrator import Orchestrator
+from .config import Config, load_config
+from .models.report import ComplianceReport
 
 
 def determine_exit_code(violations: List, config: Config) -> int:
-    """Map violations and strictness levels to exit codes:
-    - 0: Compliant (or all violations are 'audit')
-    - 1: Violations detected (at least one 'enforce' strictness)
-    - 2: Warnings detected (no 'enforce', at least one 'warn' strictness)
-    - 3: Internal framework error
-    """
-    from ade_compliance.models.axiom import ViolationState
+    """Determine the exit code based on the strictness of active violations.
 
-    active_violations = [v for v in violations if v.state not in (ViolationState.OVERRIDDEN, ViolationState.RESOLVED)]
-    if not active_violations:
-        return 0
+    - "enforce" violation = exit 1
+    - "warn" violation = exit 2
+    - "audit" violation / no active violations = exit 0
+    """
+    from .config import get_axiom_strictness
+
+    active_violations = [
+        v for v in violations if hasattr(v, "state") and v.state.value == "NEW"
+    ]
 
     has_enforce = False
     has_warn = False
 
     for v in active_violations:
         axiom_id = v.axiom_id or ""
-        strictness = get_axiom_strictness(config, axiom_id)
+        strictness = get_axiom_strictness(config, axiom_id, v.file_path)
 
         match strictness:
             case "enforce":
@@ -49,31 +49,37 @@ def determine_exit_code(violations: List, config: Config) -> int:
 
 
 def _run_checks(
-    paths: List[str],
-    config: str,
+    files: List[str],
+    config_path: str,
     run_spec: bool = True,
     run_test: bool = True,
     run_trace: bool = True,
     run_adr: bool = True,
-) -> Tuple[ComplianceReport, Config]:
-    # Expand paths
-    files = []
-    for p in paths:
-        path = Path(p)
-        if path.is_file():
-            files.append(str(path).replace("\\", "/"))
-        elif path.is_dir():
-            # Recursive search for supported languages
-            for ext in ("*.py", "*.js", "*.ts", "*.tsx", "*.java"):
-                for f in path.rglob(ext):
-                    files.append(str(f).replace("\\", "/"))
+) -> tuple[ComplianceReport, Config]:
+    """Execute validation checks on specified files concurrently.
 
-    if not files:
-        click.echo("No files found to check.")
-        sys.exit(0)
+    Returns the ComplianceReport and loaded Config.
+    """
+    import asyncio
+
+    from .services.orchestrator import Orchestrator
 
     # Load Config
-    cfg = load_config(Path(config))
+    cfg = load_config(Path(config_path))
+
+    # Check if agent is blocked (FR-028 / U3)
+    from ade_compliance.services.escalation import EscalationService
+
+    try:
+        escalation_service = EscalationService(cfg)
+        if escalation_service.is_agent_blocked():
+            click.echo(
+                "Error: Agent is blocked due to undelivered escalations in the local queue (fail-closed).", err=True
+            )
+            sys.exit(3)
+    except Exception as e:
+        click.echo(f"Error checking agent status: {e}", err=True)
+        sys.exit(3)
 
     # Configure active engines
     cfg.engines.spec.enabled = cfg.engines.spec.enabled and run_spec
@@ -82,110 +88,24 @@ def _run_checks(
     if hasattr(cfg.engines, "adr"):
         cfg.engines.adr.enabled = cfg.engines.adr.enabled and run_adr
 
-    # Run Orchestrator
-    orchestrator = Orchestrator(cfg)
-
-    try:
-        report = asyncio.run(orchestrator.run(files))
-    except Exception as e:
-        click.echo(f"Error running checks: {e}", err=True)
-        sys.exit(3)
-
+    # Setup orchestrator & run check
+    orch = Orchestrator(cfg)
+    report = asyncio.run(orch.run(files))
     return report, cfg
 
 
 @click.group()
 def main():
-    """ADE Compliance Framework CLI"""
-    if sys.platform == "win32":
-        try:
-            sys.stdout.reconfigure(encoding="utf-8")
-            sys.stderr.reconfigure(encoding="utf-8")
-        except Exception:
-            pass
-
-
-@main.command()
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def run(paths: List[str], config: str):
-    """Run compliance checks on the specified paths (legacy compatibility)."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
-    click.echo(report.generate_summary())
-    if report.violations:
-        sys.exit(1)
-    sys.exit(0)
+    """First-ADE compliance CLI utility."""
+    pass
 
 
 @main.command(name="check-all")
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
 def check_all(paths: List[str], config: str):
-    """Run all compliance checks on the specified paths."""
+    """Execute all active compliance verification engines."""
     report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
-    click.echo(report.generate_summary())
-    exit_code = determine_exit_code(report.violations, cfg)
-    sys.exit(exit_code)
-
-
-@main.command(name="check-spec")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def check_spec(paths: List[str], config: str):
-    """Run specification compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=True, run_test=False, run_trace=False, run_adr=False)
-    click.echo(report.generate_summary())
-    exit_code = determine_exit_code(report.violations, cfg)
-    sys.exit(exit_code)
-
-
-@main.command(name="check-test")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def check_test(paths: List[str], config: str):
-    """Run test compliance checks."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=True, run_trace=False, run_adr=False)
-    click.echo(report.generate_summary())
-    exit_code = determine_exit_code(report.violations, cfg)
-    sys.exit(exit_code)
-
-
-@main.command(name="check-traceability")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def check_traceability(paths: List[str], config: str):
-    """Run traceability checks and generate matrix."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False)
-
-    # Print Traceability Matrix
-    click.echo("\n--- Traceability Matrix ---")
-    if not report.traceability_matrix:
-        click.echo("No traceability links extracted.")
-    else:
-        for source, links in report.traceability_matrix.items():
-            click.echo(f"\nSource: {source}")
-            for ltype, targets in links.items():
-                if targets:
-                    click.echo(f"  {ltype.capitalize()}: {', '.join(targets)}")
-
-    trace_violations = [v for v in report.violations if v.axiom_id == "Π.3.1"]
-    if trace_violations:
-        click.echo(f"\nFound {len(trace_violations)} traceability violation(s):")
-        for v in trace_violations:
-            click.echo(f"  - {v.file_path}: {v.message}")
-        exit_code = determine_exit_code(trace_violations, cfg)
-        sys.exit(exit_code)
-
-    click.echo("\nTraceability check passed successfully!")
-    sys.exit(0)
-
-
-@main.command(name="check-adr")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def check_adr(paths: List[str], config: str):
-    """Run ADR compliance and architectural change checks."""
-    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=True)
     click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
@@ -194,48 +114,56 @@ def check_adr(paths: List[str], config: str):
 @main.command(name="generate-report")
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def generate_report(paths: List[str], config: str):
-    """Generate machine-readable JSON compliance report."""
+@click.option("--output", "-o", default="ade-report.json", help="Report output destination")
+def generate_report(paths: List[str], config: str, output: str):
+    """Generate detailed JSON compliance report."""
     report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
-    report.generate_summary()
-    click.echo(report.model_dump_json(by_alias=True))
+    json_data = report.model_dump_json(by_alias=True)
+    with open(output, "w", encoding="utf-8") as f:
+        f.write(json_data)
+    click.echo(f"Report generated: {output}")
+    sys.exit(0)
+
+
+@main.command(name="check-traceability")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_traceability(paths: List[str], config: str):
+    """Execute spec traceability verification check."""
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False)
+    click.echo(report.generate_summary())
     exit_code = determine_exit_code(report.violations, cfg)
     sys.exit(exit_code)
 
 
-@main.command(name="override")
+@main.command()
 @click.argument("axiom_id")
-@click.option(
-    "--scope-type",
-    "-s",
-    type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]),
-    default="FILE",
-    help="Override scope type",
-)
-@click.option("--scope-value", "-v", required=True, help="File path, directory path, or component name")
-@click.option("--rationale", "-r", required=True, help="Rationale for the override (min 20 characters)")
-@click.option("--created-by", "-b", required=True, help="Architect SSO ID")
-@click.option("--expires-in-days", "-e", type=int, default=90, help="Override expiration in days")
-@click.option("--permanent", is_flag=True, help="Make the override permanent")
-@click.option("--justification", "-j", default="", help="Permanent justification (required if permanent)")
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+@click.argument("scope_type", type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]))
+@click.argument("scope_value")
+@click.argument("rationale")
+@click.option("--created-by", "-u", default="architect-1", help="SSO ID of the architect")
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config")
+@click.option("--expires-in-days", "-d", default=90, help="Expiration timeline in days")
+@click.option("--permanent", "-p", is_flag=True, help="Make the override permanent")
+@click.option("--justification", "-j", default="", help="Elevated Peer Review or signature ID")
 def override(
-    axiom_id, scope_type, scope_value, rationale, created_by, expires_in_days, permanent, justification, config
+    axiom_id: str,
+    scope_type: str,
+    scope_value: str,
+    rationale: str,
+    created_by: str,
+    config: str,
+    expires_in_days: int,
+    permanent: bool,
+    justification: str,
 ):
-    """Create a compliance violation override."""
-    if len(rationale) < 20:
-        click.echo("Error: Rationale must be at least 20 characters long.", err=True)
-        sys.exit(3)
-    if permanent and not justification:
-        click.echo("Error: Permanent justification is required when is_permanent is True.", err=True)
-        sys.exit(3)
-
+    """Register a new rule exception override."""
     cfg = load_config(Path(config))
-    from ade_compliance.services.override import OverrideService
+    from .services.override import OverrideService
 
     try:
         svc = OverrideService(cfg)
-        res = svc.create_override(
+        o = svc.create_override(
             axiom_id=axiom_id,
             scope_type=scope_type,
             scope_value=scope_value,
@@ -245,10 +173,10 @@ def override(
             is_permanent=permanent,
             permanent_justification=justification,
         )
-        click.echo(f"Override created successfully: ID {res.id}")
+        click.echo(f"Override registered successfully: ID = {o.id}")
         sys.exit(0)
     except Exception as e:
-        click.echo(f"Error creating override: {e}", err=True)
+        click.echo(f"Error registering override: {e}", err=True)
         sys.exit(3)
 
 
@@ -287,22 +215,84 @@ def prompt_decorate(paths: List[str], config: str):
     markdown = generate_prompt_decorator(cfg, files_list)
     click.echo(markdown)
     sys.exit(0)
+
+
+@main.command(name="install-hook")
+def install_hook():
+    """Install the git pre-commit hook automatically."""
+    try:
+        git_root = find_git_root()
+        hooks_dir = git_root / ".git" / "hooks"
+        if not hooks_dir.exists():
+            hooks_dir.mkdir(parents=True, exist_ok=True)
+
+        hook_path = hooks_dir / "pre-commit"
+        python_exec = sys.executable.replace("\\", "/")
+
+        hook_content = f"""#!/bin/sh
+# Auto-generated by First-ADE compliance framework.
+# Dynamic execution matching the current active interpreter context.
+"{python_exec}" -m ade_compliance.hooks.pre_commit
+"""
+
+        hook_path.write_text(hook_content, encoding="utf-8")
+
+        # On non-Windows platforms, make the hook executable
+        if sys.platform != "win32":
+            import os
+            import stat
+
+            st = os.stat(hook_path)
+            os.chmod(hook_path, st.st_mode | stat.S_IEXEC)
+
+        click.echo(f"Success: Git pre-commit hook installed to {hook_path.name}")
+        sys.exit(0)
+    except Exception as e:
+        click.echo(f"Error installing pre-commit hook: {e}", err=True)
+        sys.exit(2)
+
+
+@main.command(name="check-deployment")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_deployment(paths: List[str], config: str):
+    """Check deployment readiness — blocks on unresolved critical/high violations (FR-023)."""
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
+
+    from ade_compliance.config import map_severity_to_criticality
+
+    blocking = []
+    for v in report.violations:
+        criticality = map_severity_to_criticality("critical", v.axiom_id)
+        if criticality in ("critical", "high"):
+            blocking.append(v)
+
+    if blocking:
+        click.echo(f"DEPLOYMENT BLOCKED: {len(blocking)} critical/high violation(s) found.", err=True)
+        for v in blocking:
+            click.echo(f"  - [{v.axiom_id}] {v.file_path}: {v.message}", err=True)
+        sys.exit(1)
+
+    click.echo("Deployment gate passed: No unresolved critical/high violations.")
+    sys.exit(0)
+
+
+def find_git_root() -> Path:
+    curr = Path.cwd().resolve()
+    for parent in [curr] + list(curr.parents):
+        if (parent / ".git").exists():
+            return parent
+    raise RuntimeError("Not a git repository (or any of the parent directories): .git")
+
+
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
 @click.option("--port", default=8080, type=int, help="Port to bind to (default: 8080)")
-@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-def serve(host: str, port: int, config: str):
-    """Start the ADE Compliance HTTP API server."""
-    import uvicorn
+def serve(host: str, port: int):
+    """Run First-ADE REST API server daemon."""
+    from .services.server import run_server
 
-    click.echo(f"Starting ADE Compliance server on {host}:{port}")
-    uvicorn.run(
-        "ade_compliance.server:app",
-        host=host,
-        port=port,
-        workers=1,
-        log_level="info",
-    )
+    run_server(host, port)
 
 
 if __name__ == "__main__":

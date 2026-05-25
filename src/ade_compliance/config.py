@@ -147,7 +147,7 @@ class Config(BaseSettings):
         return (MergedSettingsSource(settings_cls, custom_env, init_settings),)
 
 
-def get_axiom_strictness(config: Config, axiom_id: str) -> StrictnessLevel:
+def get_axiom_strictness(config: Config, axiom_id: str, file_path: Optional[str] = None) -> StrictnessLevel:
     """Cascading strictness lookup:
     1. Check specific axiom strictness (in config.axioms)
     2. Check per-engine strictness based on prefix

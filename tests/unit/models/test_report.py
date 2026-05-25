@@ -81,3 +81,63 @@ def test_report_summary_includes_all_states():
     assert report.summary["acknowledged"] == 1
     assert report.summary["resolved"] == 0
     assert report.summary["overridden"] == 1
+
+
+def test_report_json_schema_has_version_key():
+    """T048: Verify model_dump_json output contains schema version key."""
+    report = ComplianceReport(repo_root=".")
+    json_str = report.model_dump_json(by_alias=True)
+
+    import json
+
+    data = json.loads(json_str)
+    assert "version" in data
+    assert data["version"] == "1.0.0"
+
+
+def test_report_traceability_matrix_serialization():
+    """T048: Create a report with traceability_matrix data and verify it serializes correctly."""
+    matrix = {
+        "src/main.py": {
+            "implements": ["FR-001", "FR-002"],
+            "traces_to": ["Π.1.1"],
+        }
+    }
+    report = ComplianceReport(repo_root=".", traceability_matrix=matrix)
+
+    data = report.model_dump(by_alias=True)
+    assert "traceability_matrix" in data
+    assert data["traceability_matrix"]["src/main.py"]["implements"] == ["FR-001", "FR-002"]
+    assert data["traceability_matrix"]["src/main.py"]["traces_to"] == ["Π.1.1"]
+
+    # Roundtrip through JSON
+    import json
+
+    json_str = report.model_dump_json(by_alias=True)
+    restored = json.loads(json_str)
+    assert restored["traceability_matrix"] == matrix
+
+
+def test_report_metrics_aggregation():
+    """T048: Verify metrics dict is preserved through serialization roundtrip."""
+    import json
+
+    metrics = {
+        "coverage": 85.0,
+        "spec_compliance_pct": 92.3,
+        "violations_per_file": 0.15,
+        "files_checked": 42,
+    }
+    report = ComplianceReport(repo_root=".", metrics=metrics)
+
+    # Verify model_dump preserves metrics
+    data = report.model_dump(by_alias=True)
+    assert data["metrics"]["coverage"] == 85.0
+    assert data["metrics"]["spec_compliance_pct"] == 92.3
+    assert data["metrics"]["violations_per_file"] == 0.15
+    assert data["metrics"]["files_checked"] == 42
+
+    # Verify JSON roundtrip preserves metrics
+    json_str = report.model_dump_json(by_alias=True)
+    restored = json.loads(json_str)
+    assert restored["metrics"] == metrics
