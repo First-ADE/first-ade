@@ -109,4 +109,3 @@ To prevent regressions, timing drifts, connection leaks, and test isolation brea
    - Always pass file and directory paths through `normalize_project_path` before evaluating compliance scope matches or engine checks. This blocks bypasses resulting from path representation variations (absolute paths vs. `./` prefixes).
 6. **Bytecode Cache Purging**:
    - When modifying class constructors or module structures, forcefully clear the python bytecode cache (`Remove-Item -Recurse -Force __pycache__`) to prevent stale compiled modules from polluting pytest loading sequences.
-

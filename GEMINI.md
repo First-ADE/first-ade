@@ -67,7 +67,7 @@ Run the local orchestrator directly:
      - `# implements: FR-XXX`
      - `# traces_to: Π.X.Y`
 4. **Architect SSO & Bypasses (Principles VI/VII)**:
-   - Any manual exception/bypass override created via the API or CLI must validate SSO authenticity.Bypasses must include SSO validation headers and have structured rationales ($\geq 20$ characters).
+   - Any manual exception/bypass override created via the API or CLI must validate SSO authenticity. Bypasses must include SSO validation headers and have structured rationales ($\geq 20$ characters).
 
 ---
 
@@ -109,4 +109,3 @@ To prevent regressions, timing drifts, connection leaks, and test isolation brea
    - Always pass file and directory paths through `normalize_project_path` before evaluating compliance scope matches or engine checks. This blocks bypasses resulting from path representation variations (absolute paths vs. `./` prefixes).
 6. **Bytecode Cache Purging**:
    - When modifying class constructors or module structures, forcefully clear the python bytecode cache (`Remove-Item -Recurse -Force __pycache__`) to prevent stale compiled modules from polluting pytest loading sequences.
-
