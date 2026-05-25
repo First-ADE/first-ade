@@ -44,14 +44,40 @@ class Orchestrator:
             self.engines.append(ForbiddenAPIEngine(self.config.engines.forbidden_api))
 
     async def run(self, files: List[str]) -> ComplianceReport:
+        # Check for expiring overrides automatically (FR-021)
+        try:
+            from ..services.override import OverrideService
+
+            override_service = OverrideService(self.config)
+            override_service.check_expiring_overrides()
+        except Exception as exc:
+            self.audit.log("OVERRIDE_EXPIRY_CHECK_FAILED", {"error": str(exc), "stage": "pre-run-expiry-check"})
+
         all_violations = []
 
         # Log start
         self.audit.log("RUN_START", {"files_count": len(files)})
 
-        # Run engines concurrently
-        tasks = [engine.check(files) for engine in self.engines]
-        results = await asyncio.gather(*tasks)
+        # Acquire cross-platform file-system locks per-file to serialize concurrent checks (FR-030)
+        from contextlib import ExitStack
+
+        from ..utils.path import file_system_lock
+
+        locked_files = []
+        with ExitStack() as stack:
+            for f in files:
+                try:
+                    # standard file locking on file path
+                    lock_ctx = file_system_lock(f)
+                    acquired = stack.enter_context(lock_ctx)
+                    if acquired:
+                        locked_files.append(f)
+                except Exception as e:
+                    self.audit.log("FILE_LOCK_ACQUIRE_FAILED", {"file_path": f, "error": str(e)})
+
+            # Run engines concurrently within locked boundary
+            tasks = [engine.check(files) for engine in self.engines]
+            results = await asyncio.gather(*tasks)
 
         for violations in results:
             all_violations.extend(violations)
@@ -84,6 +110,11 @@ class Orchestrator:
                     pass
             traceability_matrix = self.trace_engine.generate_matrix(all_links)
 
+        # Count only active, non-overridden violations for failures calculation (Π.5.3)
+        from ..models.axiom import ViolationState
+
+        active_violations = [v for v in all_violations if v.state != ViolationState.OVERRIDDEN]
+
         # Log findings
         for v in all_violations:
             self.audit.log(
@@ -94,16 +125,16 @@ class Orchestrator:
                     "file_path": v.file_path,
                 },
             )
-        self.audit.log("RUN_COMPLETE", {"violations_count": len(all_violations)})
+        self.audit.log("RUN_COMPLETE", {"violations_count": len(active_violations)})
 
-        # Check consecutive failures (Π.5.3)
-        if len(all_violations) > 0:
+        # Check consecutive failures (Π.5.3) using active violations
+        if len(active_violations) > 0:
             from ..services.escalation import EscalationService
 
             escalation_service = EscalationService(self.config)
             try:
                 if escalation_service.check_consecutive_failures():
-                    titles = [f"- {v.file_path}: {v.message}" for v in all_violations]
+                    titles = [f"- {v.file_path}: {v.message}" for v in active_violations]
                     violations_summary = "\n".join(titles)
                     body = (
                         "Agent has failed compliance checks 3 consecutive times.\n\n"

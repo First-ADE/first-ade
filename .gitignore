@@ -36,3 +36,8 @@ build/
 # Project specific
 .ade_compliance/
 docs/decisions/index.md
+*.lock
+*.py.lock
+*.pycc
+**/__pycache__/
+

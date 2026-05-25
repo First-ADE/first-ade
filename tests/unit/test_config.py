@@ -215,3 +215,44 @@ def test_traceability_alias_from_yaml(tmp_path):
     config = load_config(config_file)
     assert config.engines.trace.strictness == "enforce"
     assert config.engines.trace.enabled is False
+
+
+# ── Environment override tests ──────────────────────────────────────────────
+
+
+def test_env_var_override_global(monkeypatch):
+    """Environment variables with 'ADE_' prefix override global settings."""
+    monkeypatch.setenv("ADE_GLOBAL__STRICTNESS", "audit")
+    monkeypatch.setenv("ADE_GLOBAL__ENABLED", "false")
+    monkeypatch.setenv("ADE_GLOBAL__AUDIT_PATH", "env_path.sqlite")
+
+    config = Config()
+    assert config.global_settings.strictness == "audit"
+    assert config.global_settings.enabled is False
+    assert config.global_settings.audit_path == "env_path.sqlite"
+
+
+def test_env_var_override_engine(monkeypatch):
+    """Environment variables with 'ADE_' prefix override nested engine config."""
+    monkeypatch.setenv("ADE_ENGINES__TEST__MIN_COVERAGE", "95")
+    monkeypatch.setenv("ADE_ENGINES__TEST__STRICTNESS", "warn")
+    monkeypatch.setenv("ADE_ENGINES__SPEC__ENABLED", "false")
+
+    config = Config()
+    assert config.engines.test.min_coverage == 95
+    assert config.engines.test.strictness == "warn"
+    assert config.engines.spec.enabled is False
+
+
+def test_env_var_override_with_yaml_fallback(tmp_path, monkeypatch):
+    """Environment variables override values loaded from a YAML configuration file."""
+    config_file = tmp_path / ".ade-compliance.yml"
+    config_file.write_text("global:\n  strictness: enforce\n  enabled: true\nengines:\n  test:\n    min_coverage: 80\n")
+
+    monkeypatch.setenv("ADE_GLOBAL__STRICTNESS", "warn")
+    monkeypatch.setenv("ADE_ENGINES__TEST__MIN_COVERAGE", "90")
+
+    config = load_config(config_file)
+    assert config.global_settings.strictness == "warn"  # overridden by env
+    assert config.global_settings.enabled is True  # fallback to YAML
+    assert config.engines.test.min_coverage == 90  # overridden by env
