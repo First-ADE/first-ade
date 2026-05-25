@@ -111,6 +111,61 @@ class TestOverrideService:
         assert o.is_permanent is True
         assert o.permanent_justification == "SSO-PR-123-This is a valid permanent justification."
 
+    def test_create_override_cryptographic_signature(self, override_service):
+        """Verify that a cryptographically signed permanent justification passes validation, while a tampered signature fails."""
+        import base64
+
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+        from ade_compliance.services.crypto import register_architect_key
+
+        # 1. Generate an RSA key pair for testing
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        public_key_pem = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+        # 2. Register the mock architect's public key
+        register_architect_key("HA-CRYPTO-TEST", public_key_pem)
+
+        # 3. Create a valid rationale
+        rationale = "This is a very long rationale of more than twenty characters."
+
+        # 4. Sign the rationale using the private key
+        signature = private_key.sign(
+            rationale.encode("utf-8"),
+            padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
+            hashes.SHA256(),
+        )
+        sig_b64 = base64.b64encode(signature).decode("utf-8")
+
+        # 5. Verify that valid signature succeeds
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale=rationale,
+            created_by="HA-CRYPTO-TEST",
+            is_permanent=True,
+            permanent_justification=f"SSO-SIG-{sig_b64}",
+        )
+        assert o.is_permanent is True
+        assert o.permanent_justification.startswith("SSO-SIG-")
+
+        # 6. Verify that creating a permanent override with a tampered signature fails
+        tampered_sig = base64.b64encode(b"tampered_signature_payload_data").decode("utf-8")
+        with pytest.raises(ValueError, match="Cryptographic attestation failed"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="FILE",
+                scope_value="src/main.py",
+                rationale=rationale,
+                created_by="HA-CRYPTO-TEST",
+                is_permanent=True,
+                permanent_justification=f"SSO-SIG-{tampered_sig}",
+            )
+
     def test_get_active_overrides_filters_expired_and_revoked(self, override_service):
         """get_active_overrides must exclude expired or revoked overrides."""
         # 1. Create a normal active override
@@ -207,3 +262,85 @@ class TestOverrideService:
         # Verify audit logs
         entries = override_service.audit.get_entries()
         assert any(e["action"] == "OVERRIDE_REVOKED" for e in entries)
+
+    def test_create_override_invalid_scope_type(self, override_service):
+        """Creating an override with an invalid scope type must raise ValueError."""
+        with pytest.raises(ValueError, match="Override scope_type must be one of"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="INVALID_TYPE",
+                scope_value="src/main.py",
+                rationale="This is a very long rationale of more than twenty characters.",
+                created_by="architect-1",
+            )
+
+    def test_create_override_empty_scope_value(self, override_service):
+        """Creating an override with an empty or whitespace scope value must raise ValueError."""
+        with pytest.raises(ValueError, match="Override scope_value cannot be empty"):
+            override_service.create_override(
+                axiom_id="Π.1.1",
+                scope_type="FILE",
+                scope_value="   ",
+                rationale="This is a very long rationale of more than twenty characters.",
+                created_by="architect-1",
+            )
+
+    def test_is_override_active_absolute_paths(self, override_service):
+        """Verify that overrides match correctly even when absolute or differently prefixed paths are used."""
+        override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/core/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        # Match using absolute path
+        import os
+
+        workspace_abs = os.path.abspath(".")
+        abs_path = os.path.join(workspace_abs, "src", "core", "main.py")
+
+        assert override_service.is_override_active("Π.1.1", abs_path) is True
+        assert override_service.is_override_active("Π.1.1", "./src/core/main.py") is True
+
+    def test_override_audit_trail_logged(self, override_service):
+        """T052: Create an override, then verify audit_log table has an OVERRIDE_RECORDED entry matching the override ID."""
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        entries = override_service.audit.get_entries()
+        override_entries = [e for e in entries if e["action"] == "OVERRIDE_RECORDED"]
+
+        assert len(override_entries) >= 1
+        # Verify the audit entry details contain the override ID
+        matched = [e for e in override_entries if e["details"].get("id") == o.id]
+        assert len(matched) == 1, f"Expected audit entry with id={o.id}, got: {override_entries}"
+
+    def test_revoke_override_audit_trail(self, override_service):
+        """T052: Create and revoke an override, verify OVERRIDE_REVOKED audit entry exists."""
+        o = override_service.create_override(
+            axiom_id="Π.1.1",
+            scope_type="FILE",
+            scope_value="src/main.py",
+            rationale="This is a very long rationale of more than twenty characters.",
+            created_by="architect-1",
+        )
+
+        # Revoke the override
+        result = override_service.revoke_override(o.id)
+        assert result is True
+
+        # Verify OVERRIDE_REVOKED audit entry exists
+        entries = override_service.audit.get_entries()
+        revoke_entries = [e for e in entries if e["action"] == "OVERRIDE_REVOKED"]
+
+        assert len(revoke_entries) >= 1
+        # Verify the revoke audit entry references the override ID
+        matched = [e for e in revoke_entries if e["details"].get("id") == o.id]
+        assert len(matched) == 1, f"Expected OVERRIDE_REVOKED entry with id={o.id}, got: {revoke_entries}"
