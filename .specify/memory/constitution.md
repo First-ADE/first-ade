@@ -19,7 +19,11 @@
 Every participant—Human or LLM Agent—MUST read and explicitly accept the ADE Core Axioms before interacting with any project specification or code. Acceptance is a prerequisite for all development activity. Agents MUST acknowledge acceptance in their initial system prompt or session start. Failure to accept the axioms disqualifies the participant from contributing to or modifying the project.
 
 ### II. Specification Governance *(Σ.1, Π.1.1, Π.1.2, Π.1.2a)*
-No feature code shall be written without a corresponding specification. Specifications reside in `.specify/specs/{feature-name}/` and MUST include `spec.md` (requirements), `plan.md` (architecture), and `tasks.md` (work breakdown). Violations block PR merge. Specifications MUST follow the Spec-Kit format.
+No feature code shall be written without a corresponding specification. Speckit/Specify is the sole canonical framework for all specification-first, plan-first, and test-first development (the legacy Kiro tool and `.kiro` directories are deprecated and removed). 
+
+The root-level [SPEC.md](file:///c:/Users/bfoxt/OneDrive/Desktop/First-ADE/first-ade/SPEC.md) is the official single source of truth for the service. All new feature specifications must branch/start from the primary `SPEC.md` and conclude with their completed details being integrated back into the primary `SPEC.md`.
+
+Individual feature specifications reside in `.specify/specs/{feature-name}/` and MUST include `spec.md` (requirements), `plan.md` (architecture), and `tasks.md` (work breakdown). Violations block PR merge. Specifications MUST follow the Spec-Kit format.
 
 ### III. Deterministic Verification *(Σ.2, Π.2.1, Π.2.1a, Π.2.3a)*
 All features MUST have failing tests before implementation (Red-Green-Refactor). Tests MUST be deterministic and isolated: no external network calls in unit tests, all I/O and external services mocked, all RNGs seeded, no `sleep()`-based timing. Unit suites MUST complete within 60 seconds; integration suites within 5 minutes; E2E suites within 15 minutes.

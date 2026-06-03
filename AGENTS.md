@@ -1,4 +1,4 @@
-﻿# first-ade Development Guidelines
+# first-ade Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-06-03
 
@@ -25,4 +25,8 @@ Python 3.11+: Follow standard conventions
 - 001-ade-compliance: Added Python 3.11+ + Tree-sitter (multi-lang parsing), Click (CLI), FastAPI (HTTP API), Pydantic (data models), SQLAlchemy (audit persistence), pyadr (MADR ADR lifecycle CLI)
 
 <!-- MANUAL ADDITIONS START -->
+### Spec Development & Governance
+- **Speckit/Specify is Canon**: Speckit (`.specify/` and `specs/`) is the sole, canonical framework for all specification-first, plan-first, and test-first development. The legacy Kiro tool and `.kiro` directories are deprecated and removed.
+- **Single Source of Truth (SPEC.md)**: The `SPEC.md` file at the root of the project is the official primary specification of the service.
+- **Spec Lifecycle**: All new features and changes must start from the parent `SPEC.md` and conclude with their completed details being merged/integrated back into the primary `SPEC.md`.
 <!-- MANUAL ADDITIONS END -->
