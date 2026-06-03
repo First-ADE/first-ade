@@ -41,3 +41,15 @@ docs/decisions/index.md
 *.pycc
 **/__pycache__/
 
+# Scratch and Workspace ignores
+scratch/
+
+# First-ADE specific ignores
+ade-report.json
+
+# Obsidian-specific ignores
+**/.obsidian/workspace.json
+**/.obsidian/workspace
+**/.obsidian/graph.json
+**/.obsidian/backlink.json
+**/.obsidian/hotkeys.json
