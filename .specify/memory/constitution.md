@@ -19,7 +19,7 @@
 Every participant—Human or LLM Agent—MUST read and explicitly accept the ADE Core Axioms before interacting with any project specification or code. Acceptance is a prerequisite for all development activity. Agents MUST acknowledge acceptance in their initial system prompt or session start. Failure to accept the axioms disqualifies the participant from contributing to or modifying the project.
 
 ### II. Specification Governance *(Σ.1, Π.1.1, Π.1.2, Π.1.2a)*
-No feature code shall be written without a corresponding specification. Speckit/Specify is the sole canonical framework for all specification-first, plan-first, and test-first development (the legacy Kiro tool and `.kiro` directories are deprecated and removed). 
+No feature code shall be written without a corresponding specification. Speckit/Specify is the sole canonical framework for all specification-first, plan-first, and test-first development. 
 
 The root-level [SPEC.md](file:///c:/Users/bfoxt/OneDrive/Desktop/First-ADE/first-ade/SPEC.md) is the official single source of truth for the service. All new feature specifications must branch/start from the primary `SPEC.md` and conclude with their completed details being integrated back into the primary `SPEC.md`.
 

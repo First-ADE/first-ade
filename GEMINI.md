@@ -11,7 +11,7 @@ Before making any functional or structural changes, all agents must load and con
 2. **Axioms**: `docs/AXIOMS.md` — 5 foundational software design truths (Σ.1–Σ.5)
 3. **Postulates**: `docs/POSTULATES.md` — three orders of derived rules (Π.x.y)
 4. **Templates**: `.specify/templates/` — canonical plan, specs, and tasks structures
-5. **Canon Specification Development**: All spec development must use **Speckit/Specify** (Kiro is deprecated and removed).
+5. **Canon Specification Development**: All spec development must use **Speckit/Specify**.
 6. **Single Source of Truth (`SPEC.md`)**: The root-level [SPEC.md](file:///c:/Users/bfoxt/OneDrive/Desktop/First-ADE/first-ade/SPEC.md) is the sole primary specification for the service. All new feature specifications must branch from it and end with integration back into it.
 
 ---
