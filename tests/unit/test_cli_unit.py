@@ -144,8 +144,9 @@ def test_verify_audit_trail_cli_tampered():
 
 def test_run_checks_directory_expansion(tmp_path):
     """Verify that _run_checks recursively expands directories to supported files."""
+    from unittest.mock import MagicMock, patch
+
     from ade_compliance.cli import _run_checks
-    from unittest.mock import patch, MagicMock
 
     # Create dummy directory structure
     src_dir = tmp_path / "src"
