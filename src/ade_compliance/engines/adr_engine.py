@@ -8,6 +8,10 @@ from ..models.axiom import Violation, ViolationState
 from .base import BaseEngine
 
 
+def _run_pyadr() -> subprocess.CompletedProcess:
+    return subprocess.run(["pyadr", "check-adr-repo"], capture_output=True, text=True)
+
+
 class ADREngine(BaseEngine):
     """Engine to enforce postulate Π.3.1 (ADRs required for all architectural changes)."""
 
@@ -124,7 +128,7 @@ class ADREngine(BaseEngine):
         if adr_files:
             try:
                 # Run check-adr-repo from pyadr
-                res = subprocess.run(["pyadr", "check-adr-repo"], capture_output=True, text=True)
+                res = _run_pyadr()
                 if res.returncode != 0:
                     violations.append(
                         Violation(
