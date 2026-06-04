@@ -83,7 +83,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.4.2a** | No circular imports                                                  | Π.4.1a (unidirectional deps)        |
 | **Π.5.2**  | Context files: `.gemini.md`, `.claude.md`, `copilot-instructions.md` | Π.5.1 (explicit context)            |
 | **Π.5.2a** | Constitution files define agent boundaries                           | Π.5.1a (constitutional constraints) |
-| **Π.5.2b** | Gitignore all `.agents/`, `.gemini/`, `.windsurf/`, `.specify/work/`  | Π.5.1c (not committed to repos)     |
+| **Π.5.2b** | Tooling and skill artifacts reside in ignored workspace directories  | Π.5.1c (not committed to repos)     |
 
 ---
 
@@ -103,7 +103,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.4.3a** | TypeScript: barrel exports for clean interfaces              | Π.4.2a (no circular imports)   |
 | **Π.5.3**  | Agents must try 3 strategies before escalating               | Π.5.1a (constrained operation) |
 | **Π.5.3a** | Browser agents for UI verification                           | Π.5.1b (verification)          |
-| **Π.5.3b** | Enforce bootstrap commands for context re-scaffolding        | Π.5.2b (gitignore directories)  |
+| **Π.5.3b** | Workspace initialization tasks dynamically scaffold local tooling context | Π.5.2b (gitignore directories)  |
 
 ---
 
