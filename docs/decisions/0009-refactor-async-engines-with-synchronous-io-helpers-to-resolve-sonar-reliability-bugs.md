@@ -31,7 +31,9 @@ Chosen option: "Option 1", because SonarCloud's AST-based rule `python:S7493` lo
 *   SonarCloud reliability ratings are resolved, passing the quality gate.
 *   Pytest unit and integration tests remain 100% green without modification.
 *   Keeps dependencies and concurrency models simple.
+*   Eliminates code duplication by centralizing the synchronous file-reading helper into a shared `read_file_content` utility in `src/ade_compliance/utils/path.py`.
 
 ### Negative Consequences
 
-*   Introduces minor helper functions in engine modules.
+*   None identified after helper consolidation.
+

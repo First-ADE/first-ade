@@ -167,3 +167,9 @@ def file_system_lock(file_path: str, timeout: float = 10.0) -> Generator[bool, N
                 # Swallowing file removal errors during teardown is expected and safe
                 # (e.g. if the lock file was already programmatically deleted).
                 pass
+
+
+def read_file_content(path: Path) -> str:
+    """Read file content with utf-8 encoding."""
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
