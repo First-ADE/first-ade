@@ -175,6 +175,15 @@ def get_axiom_strictness(config: Config, axiom_id: str, file_path: Optional[str]
     return config.global_settings.strictness
 
 
+def map_severity_to_criticality(severity: str, axiom_id: str) -> str:
+    """Map violation severity and axiom ID to a decision criticality level."""
+    if axiom_id.startswith("Π.1") or axiom_id.startswith("Π.2"):
+        return "critical"
+
+    sev = severity.lower()
+    return sev if sev in ("critical", "high", "medium", "low") else "medium"
+
+
 def load_config(path: Path = Path(".ade-compliance.yml")) -> Config:
     """Load and validate configuration from a YAML file.
 

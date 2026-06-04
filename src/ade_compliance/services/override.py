@@ -103,9 +103,7 @@ class OverrideService:
             elif justification.startswith("SSO-PR-"):
                 pr_id = justification[len("SSO-PR-") :].strip()
                 if not pr_id:
-                    raise ValueError(
-                        "SSO-PR- permanent justification must include a non-empty Peer Review ID."
-                    )
+                    raise ValueError("SSO-PR- permanent justification must include a non-empty Peer Review ID.")
             else:
                 raise ValueError(
                     "permanent_justification must start with either 'SSO-PR-' or 'SSO-SIG-' "
