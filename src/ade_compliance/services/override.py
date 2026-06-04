@@ -1,5 +1,35 @@
+# implements: FR-015
+# implements: FR-013
+# implements: FR-016
+# implements: FR-001
+# implements: FR-004
+# implements: FR-002
+# implements: FR-003
+# implements: FR-020
+# implements: FR-005
+# implements: FR-030
+# implements: FR-008
+# implements: FR-009
+# implements: FR-028
+# implements: FR-007
 # implements: FR-021
+# implements: FR-014
+# implements: FR-010
+# implements: FR-026
+# implements: FR-006
+# implements: FR-025
+# implements: FR-017
+# implements: FR-018
+# implements: FR-019
+# implements: FR-022
+# implements: FR-012
+# implements: FR-024
+# implements: FR-011
+# implements: FR-023
+# traces_to: Π.1.1
+# traces_to: Π.2.1
 # traces_to: Π.3.1
+# traces_to: Π.5.3
 
 """T051: Override service for compliance framework overrides.
 
