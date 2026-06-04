@@ -10,11 +10,6 @@ from ..models.axiom import TraceLink, Violation, ViolationState
 from .base import BaseEngine
 
 
-def _read_file_content(path: Path) -> str:
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
-
 class TraceEngine(BaseEngine):
     def __init__(self, config):
         super().__init__(config)
@@ -198,7 +193,7 @@ class TraceEngine(BaseEngine):
         if not self.should_run():
             return []
 
-        from ..utils.path import normalize_project_path
+        from ..utils.path import normalize_project_path, read_file_content
 
         violations: List[Violation] = []
         for file_path in files:
@@ -220,7 +215,7 @@ class TraceEngine(BaseEngine):
                 continue
 
             try:
-                content = _read_file_content(path)
+                content = read_file_content(path)
             except Exception:
                 continue
 
