@@ -13,6 +13,7 @@
 | [POSTULATES.md](./POSTULATES.md)     | Three orders of postulate derivations   |
 | [CONSTITUTION.md](./CONSTITUTION.md) | Governance principles and quality gates |
 | [METHODOLOGY.md](./METHODOLOGY.md)   | The ADE lifecycle (Specify→Implement)   |
+| [ORGANIZATION.md](./ORGANIZATION.md) | GitHub organization & governance rules  |
 
 ---
 
