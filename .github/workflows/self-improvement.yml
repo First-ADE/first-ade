@@ -21,10 +21,6 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install System Dependencies (C/C++ compiler for llama-cpp)
-        run: |
-          sudo apt-get update && sudo apt-get install -y build-essential
-
       - name: Cache LLM Model File
         id: cache-model
         uses: actions/cache@v4
