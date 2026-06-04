@@ -62,7 +62,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.5.1**  | AI agents must have explicit context files       | Symbiosis requires shared understanding   |
 | **Π.5.1a** | Agents operate within constitutional constraints | Unconstrained agents violate human intent |
 | **Π.5.1b** | Verification confirms AI output matches intent   | Trust requires verification               |
-| **Π.5.1c** | Tooling and skills must not be committed to repos | Keeping git history simple/tool-agnostic  |
+| **Π.5.1c** | Development tooling and skills are independent of codebase | Keeping git history simple/tool-agnostic  |
 
 ---
 
