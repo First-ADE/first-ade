@@ -99,4 +99,6 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::pytest.PytestCollectionWarning",
+    "ignore:.*httpx.*:DeprecationWarning",
+    "ignore:.*httpx.*:UserWarning",
 ]
