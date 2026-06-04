@@ -26,6 +26,12 @@ from ..models import Severity, Violation, ViolationState
 from ..utils.path import normalize_project_path
 from .base import BaseEngine
 
+
+def _read_file_content(path: Path) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 # Mapping of forbidden attribute calls to human-readable reasons.
 # Keys are (module, attribute) tuples for calls like module.attribute().
 FORBIDDEN_ATTR_CALLS: Dict[Tuple[str, str], str] = {
@@ -142,8 +148,7 @@ class ForbiddenAPIEngine(BaseEngine):
                 continue
 
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    content = f.read()
+                content = _read_file_content(path)
             except Exception:
                 continue
 

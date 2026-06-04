@@ -16,6 +16,11 @@ from ..services.audit import AuditService
 from ..utils.path import sanitize_relative_path
 
 
+def _read_file_content(path: Path) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 class Orchestrator:
     def __init__(self, config: Config):
         self.config = config
@@ -102,8 +107,7 @@ class Orchestrator:
                         continue
 
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
-                        with open(path, "r", encoding="utf-8") as f:
-                            content = f.read()
+                        content = _read_file_content(path)
                         links = self.trace_engine.extract_links(file_path, content)
                         all_links.extend(links)
                 except Exception:
