@@ -11,6 +11,7 @@ import click
 
 from .config import Config, load_config
 from .models.report import ComplianceReport
+from .services.orchestrator import Orchestrator
 
 
 def determine_exit_code(violations: List, config: Config) -> int:
@@ -21,9 +22,12 @@ def determine_exit_code(violations: List, config: Config) -> int:
     - "audit" violation / no active violations = exit 0
     """
     from .config import get_axiom_strictness
+    from .models.axiom import ViolationState
 
     active_violations = [
-        v for v in violations if hasattr(v, "state") and v.state.value == "NEW"
+        v
+        for v in violations
+        if hasattr(v, "state") and getattr(v.state, "value", v.state) in (ViolationState.NEW, "new")
     ]
 
     has_enforce = False
@@ -61,8 +65,6 @@ def _run_checks(
     Returns the ComplianceReport and loaded Config.
     """
     import asyncio
-
-    from .services.orchestrator import Orchestrator
 
     # Load Config
     cfg = load_config(Path(config_path))
@@ -111,18 +113,55 @@ def check_all(paths: List[str], config: str):
     sys.exit(exit_code)
 
 
+@main.command(name="check-spec")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_spec(paths: List[str], config: str):
+    """Execute spec compliance verification checks."""
+    report, cfg = _run_checks(paths, config, run_spec=True, run_test=False, run_trace=False, run_adr=False)
+    click.echo(report.generate_summary())
+    exit_code = determine_exit_code(report.violations, cfg)
+    sys.exit(exit_code)
+
+
+@main.command(name="check-test")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_test(paths: List[str], config: str):
+    """Execute test compliance verification checks."""
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=True, run_trace=False, run_adr=False)
+    click.echo(report.generate_summary())
+    exit_code = determine_exit_code(report.violations, cfg)
+    sys.exit(exit_code)
+
+
+@main.command(name="check-adr")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
+def check_adr(paths: List[str], config: str):
+    """Execute ADR compliance verification checks."""
+    report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=False, run_adr=True)
+    click.echo(report.generate_summary())
+    exit_code = determine_exit_code(report.violations, cfg)
+    sys.exit(exit_code)
+
+
 @main.command(name="generate-report")
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config file")
-@click.option("--output", "-o", default="ade-report.json", help="Report output destination")
+@click.option("--output", "-o", default=None, help="Report output destination")
 def generate_report(paths: List[str], config: str, output: str):
     """Generate detailed JSON compliance report."""
     report, cfg = _run_checks(paths, config, run_spec=True, run_test=True, run_trace=True, run_adr=True)
     json_data = report.model_dump_json(by_alias=True)
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(json_data)
-    click.echo(f"Report generated: {output}")
-    sys.exit(0)
+    if output:
+        with open(output, "w", encoding="utf-8") as f:
+            f.write(json_data)
+        click.echo(f"Report generated: {output}")
+    else:
+        click.echo(json_data)
+    exit_code = determine_exit_code(report.violations, cfg)
+    sys.exit(exit_code)
 
 
 @main.command(name="check-traceability")
@@ -131,16 +170,39 @@ def generate_report(paths: List[str], config: str, output: str):
 def check_traceability(paths: List[str], config: str):
     """Execute spec traceability verification check."""
     report, cfg = _run_checks(paths, config, run_spec=False, run_test=False, run_trace=True, run_adr=False)
-    click.echo(report.generate_summary())
-    exit_code = determine_exit_code(report.violations, cfg)
-    sys.exit(exit_code)
+
+    # Print Traceability Matrix
+    click.echo("\n--- Traceability Matrix ---")
+    for file, links in report.traceability_matrix.items():
+        if links:
+            click.echo(f"File: {file}")
+            for ltype, targets in links.items():
+                if targets:
+                    click.echo(f"  {ltype.capitalize()}: {', '.join(targets)}")
+
+    trace_violations = [v for v in report.violations if v.axiom_id == "Π.3.1"]
+    if trace_violations:
+        click.echo(f"\nFound {len(trace_violations)} traceability violation(s):")
+        for v in trace_violations:
+            click.echo(f"  - {v.file_path}: {v.message}")
+        exit_code = determine_exit_code(trace_violations, cfg)
+        sys.exit(exit_code)
+
+    click.echo("\nTraceability check passed successfully!")
+    sys.exit(0)
 
 
 @main.command()
 @click.argument("axiom_id")
-@click.argument("scope_type", type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]))
-@click.argument("scope_value")
-@click.argument("rationale")
+@click.option(
+    "--scope-type",
+    "-s",
+    type=click.Choice(["FILE", "DIRECTORY", "COMPONENT"]),
+    default="FILE",
+    help="Override scope type",
+)
+@click.option("--scope-value", "-v", required=True, help="File path, directory path, or component name")
+@click.option("--rationale", "-r", required=True, help="Rationale for the override (min 20 characters)")
 @click.option("--created-by", "-u", default="architect-1", help="SSO ID of the architect")
 @click.option("--config", "-c", default=".ade-compliance.yml", help="Path to config")
 @click.option("--expires-in-days", "-d", default=90, help="Expiration timeline in days")
@@ -173,10 +235,13 @@ def override(
             is_permanent=permanent,
             permanent_justification=justification,
         )
-        click.echo(f"Override registered successfully: ID = {o.id}")
+        click.echo(f"Override created successfully: ID = {o.id}")
         sys.exit(0)
     except Exception as e:
-        click.echo(f"Error registering override: {e}", err=True)
+        msg = str(e)
+        if "permanent_justification is required" in msg:
+            msg = "Permanent justification is required when is_permanent is True."
+        click.echo(f"Error registering override: {msg}", err=True)
         sys.exit(3)
 
 
