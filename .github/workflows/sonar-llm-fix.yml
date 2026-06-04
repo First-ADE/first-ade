@@ -1,35 +1,43 @@
-name: SonarQube Automated LLM Fixer
+name: Automated Security & Quality LLM Fixer
 
 on:
-  # Trigger 1: SonarCloud bot posts its analysis summary comment on a PR
+  # Trigger 1: A security/quality bot posts a comment on a PR
   issue_comment:
     types: [created]
 
-  # Trigger 2: SonarCloud creates a GitHub issue for a finding
+  # Trigger 2: A security/quality bot creates a GitHub issue
   issues:
     types: [opened]
+
+  # Trigger 3: Manual dispatch for testing
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to remediate findings for'
+        required: true
+        type: string
 
 permissions:
   contents: write
   pull-requests: write
   issues: read
+  security-events: read
 
 jobs:
   remediate-findings:
-    # Only run when the event originates from a Sonar bot, not arbitrary comments/issues
+    # Run when the event comes from a recognized security/quality bot, or manual dispatch
     if: >-
+      github.event_name == 'workflow_dispatch'
+      ||
       (
         github.event_name == 'issue_comment'
-        && github.event.comment.user.login == 'sonarcloud[bot]'
         && github.event.issue.pull_request
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.comment.user.login)
       )
       ||
       (
         github.event_name == 'issues'
-        && (
-          github.event.issue.user.login == 'sonarcloud[bot]'
-          || github.event.issue.user.login == 'sonarqube[bot]'
-        )
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.issue.user.login)
       )
     runs-on: ubuntu-latest
     steps:
@@ -45,15 +53,19 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          DISPATCH_PR: ${{ github.event.inputs.pr_number }}
         shell: bash
         run: |
-          if [ "$EVENT_NAME" = "issue_comment" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            PR_NUMBER="$DISPATCH_PR"
+            echo "Trigger: manual dispatch for PR #${PR_NUMBER}"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
             # issue_comment on a PR — the issue number is the PR number
             PR_NUMBER="$ISSUE_NUMBER"
-            echo "Trigger: SonarCloud bot comment on PR #${PR_NUMBER}"
+            echo "Trigger: bot comment on PR #${PR_NUMBER}"
           else
             # issues:opened — try to find an associated PR
-            # Strategy 1: Parse PR number from issue title/body (Sonar often includes it)
+            # Strategy 1: Parse PR number from issue title/body (bots often include it)
             PR_NUMBER=""
             for text in "$ISSUE_TITLE" "$ISSUE_BODY"; do
               match=$(echo "$text" | grep -oP '#\K[0-9]+' | head -1)
@@ -73,7 +85,7 @@ jobs:
               echo "::error::Cannot determine associated PR. Skipping remediation."
               exit 0
             fi
-            echo "Trigger: SonarCloud issue opened, resolved to PR #${PR_NUMBER}"
+            echo "Trigger: security/quality issue opened, resolved to PR #${PR_NUMBER}"
           fi
 
           # Fetch the PR head branch via the GitHub API
