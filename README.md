@@ -1,56 +1,64 @@
-# ADE Compliance Framework
+# First-ADE (Agentic Development Environment)
 
-An agentic-first, production-grade compliance gateway ensuring absolute adherence to **Axiom-Driven Engineering (ADE)** principles throughout the software development lifecycle.
+First-ADE is a **local-first, mathematically sound compliance gateway and verification sandbox** designed to ensure absolute alignment between specifications (intent) and code (implementation) in agentic development environments.
 
 ---
 
-## 🏛️ Architectural Overview
+## 👁️ Why First-ADE?
 
-The ADE Compliance Framework acts as an automated verification barrier that prevents non-compliant code, specifications, or architectures from reaching staging and production.
+When autonomous AI agents generate code at scale, traditional testing is not enough. First-ADE wraps the developer workflow in a mathematical sandbox:
+1.  **State Simulation (Approach A)**: Traces object and memory state mutations locally, proving the code matches the agent's pre-execution predictions and preventing side-effects.
+2.  **Symbolic Proofs (Approach B)**: Extracts the control flow graph from Python ASTs and uses the **Z3 SMT solver** to statically prove that the code always satisfies spec invariants and decorators.
+3.  **Git-Native Governance**: Overrides and compliance history are version-controlled directly inside the Git repository (no databases or SaaS servers required), making compliance auditable via Pull Requests.
 
-```mermaid
-graph TD
-    %% CLI & API Entrypoints
-    CLI[Developer CLI] --> |Executes check-all| ORCH[Compliance Orchestrator]
-    API[FastAPI REST Server] --> |Pre-execution /check| ORCH
-    GHA[GitHub Actions Gate] --> |CI/CD Blocker| CLI
-    
-    %% Orchestrator & Engines
-    subgraph Verification Engines
-        ORCH --> SE[SpecEngine - Π.1.1]
-        ORCH --> TE[TestEngine - Π.2.1]
-        ORCH --> TRE[TraceEngine - Π.3.1]
-        ORCH --> ADRE[ADREngine - Π.3.1/Π.3.2]
-    end
-    
-    %% Audit Trail & Overrides
-    ORCH --> |tamper-proof chain| AUDIT[(SQLite Audit Trail)]
-    ORCH --> |is_override_active| OVERRIDE[(SQLite Override Log)]
-    
-    %% Escalation Queue
-    ORCH --> |Low confidence or 3 consecutive failures| ESC[Escalation Service]
-    ESC --> |offline cache with backoff| Q[(SQLite Escalation Queue)]
-    ESC --> |online| GH[GitHub API Issues/PRs]
+---
+
+## 📐 Monorepo Architecture
+
+First-ADE is packaged as a single, self-contained open-source monorepo:
+
+```
+                         first-ade (Single Repository)
+                         ├── cli/          # Core CLI python verification engine
+                         ├── mcp/          # Model Context Protocol server for LLMs
+                         └── github-action/# PR-level compliance action
 ```
 
-### Core Concepts
-
-- **TAMPER-PROOF AUDIT LOG**: Every compliance run, individual finding, and attest decision is logged in an append-only SQLite log with cryptographic SHA-256 hash chains (`audit_log` table), ensuring complete immutability.
-- **IMMUTABLE OVERRIDES**: Authorized Human Architects (SSO-authenticated) can register targeted exception bypasses (`GET/POST /overrides`) across `FILE`, `DIRECTORY`, or `COMPONENT` scopes. Bypasses support mandatory rationales ($\geq 20$ characters), default 90-day auto-reversion, and permanent justification gates.
-- **FAIL-CLOSED RESILIENCY**: Local queues capture GitHub escalation notifications when offline. The engine retries up to 5 times (15-min backoff) before entering a *fail-closed* state, blocking subsequent agent work to prevent compliance gaps.
+-   **`/cli`**: The Python verification CLI (`ade-compliance`) executing specification audits, state simulation checks, and AST-to-SMT proofs.
+-   **`/mcp`**: The Model Context Protocol (MCP) server enabling AI agents (like Claude and Gemini) to search the system constitution, pull requirements, and run self-checks.
+-   **`/github-action`**: Pull Request pipeline validator that blocks non-compliant merges.
 
 ---
 
 ## 🔍 Axiom Verification Matrix
 
+First-ADE enforces compliance against the system's core axioms and postulates:
+
 | Postulate | Target Principle | Enforcement Action |
 | :--- | :--- | :--- |
-| **Π.1.1** | Specification existence | Verifies that a specification file (`spec.md` or under `specs/`) exists. |
-| **Π.2.1** | Test-first alignment | Verifies that corresponding test files exist for all staging source modules. |
-| **Π.3.1** | Traceability markers | Extracts AST markers (`implements:`, `traces_to:`) across Python, JS, TS, and Java comments. |
-| **Π.3.1 (ADR)**| Architectural change gates | Enforces that any dependency/config updates or framework structural model changes have a corresponding ADR. |
-| **Π.3.2** | ADR Formats | Invokes `pyadr check-adr-repo` validator to enforce correct naming and status syntax. |
-| **Π.5.3** | Consecutive failures | Tracks repeated agent failures, escalating to a Human Architect on 3 consecutive compliance run failures. |
+| **Π.1.1** | Specification Existence | Verifies that a spec file exists for all staged changes (Speckit standard). |
+| **Π.2.1** | Test-First Alignment | Enforces that matching unit or integration tests exist before code is implemented. |
+| **Π.3.1** | Traceability Links | Extracts AST comment links (`implements:`, `traces_to:`) across Python, JS, TS, and Java. |
+| **Π.4.1** | Architectural Constraints | Statically checks dependency boundaries and imports using `import-linter`. |
+| **Π.5.3** | Agent Self-Governance | Detects repeated agent failures, escalating to a Human Architect after 3 failed runs. |
+
+---
+
+## 🛡️ Git-Based Human Overrides (No SaaS Required)
+
+Authorized Human Architects can register temporary or permanent compliance exceptions (overrides) directly in `.ade-compliance.yml`. Overrides are checked in, reviewed in Pull Requests, and signed cryptographically:
+
+```yaml
+overrides:
+  - id: "ovr-89a3f2"
+    axiom_id: "Π.1.1"
+    scope_type: "FILE"
+    scope_value: "src/legacy_module.py"
+    rationale: "Legacy module requires restructuring before spec integration."
+    created_by: "HA-01"
+    expires_at: "2026-09-01"
+    signature: "SSO-SIG-b64..."
+```
 
 ---
 
@@ -58,78 +66,61 @@ graph TD
 
 ### 1. Installation
 
-Ensure Python $\geq 3.11$ is installed. Bootstrap the virtual environment and install all dependencies:
+Bootstrap the virtual environment and install the CLI:
 
 ```powershell
 uv venv
-uv pip install -e ".[dev]"
+source .venv/bin/activate
+uv pip install -e "./cli[dev]"
 ```
 
-### 2. Manual CLI Verification (`ade-compliance`)
-
-Developers can run checks locally before pushing changes:
+### 2. Run Local Compliance Check
 
 ```powershell
-# Run all compliance engines concurrently on specified directories
+# Run all compliance engines concurrently on specified files
 ade-compliance check-all src/
 
-# Run specification-only checks
+# Run specification-only audit
 ade-compliance check-spec src/
 
-# Run test-only checks
+# Run test-first checks
 ade-compliance check-test src/
 
-# Run traceability checks and display matrix
+# Run traceability matrix extraction
 ade-compliance check-traceability src/
-
-# Generate complete machine-readable compliance report
-ade-compliance generate-report src/
 ```
 
-### 3. SSO Architect Overrides
+### 3. Registering an Override
 
-Register exception bypasses directly from the command line:
+Register an exception bypass directly from the command line:
 
 ```powershell
 ade-compliance override Π.1.1 \
   --scope-value "src/legacy/" \
   --scope-type "DIRECTORY" \
   --rationale "Legacy codebase migration; exceptions validated by architect." \
-  --created-by "architect-01" \
+  --created-by "HA-01" \
   --expires-in-days 30
 ```
 
-### 4. Running the FastAPI HTTP Server
-
-Start the API server on `127.0.0.1:8080`:
-
-```powershell
-ade-compliance serve --port 8080
-```
-
-#### API Swagger Documentation:
-- `GET /health`: Health liveness probe.
-- `POST /check`: Endpoint for agents to perform pre-execution self-checks.
-- `POST /attest`: Endpoint for agents to submit final task attestation (escalates if confidence $< 0.7$).
-- `GET /reports/trend`: Aggregates compliance statistics over a 30-day window.
-- `GET/POST /overrides`: Protected endpoints (requires `X-SSO-User` header validation) to manage bypasses.
-- `GET /metrics`: Serves Prometheus-compatible counters and latency percentiles.
-
 ---
 
-## 🔒 Security Hardening (SSO Authentication)
+## 🧪 Development & Verification
 
-Administrative and critical operations (like override management) require Human Architect single sign-on (SSO) validation.
-
-1. **Header Validation**: All REST calls to `/overrides` endpoints must pass the `X-SSO-User` header.
-2. **Architect Integrity Check**: The `CreateOverrideRequest.created_by` field must exactly match the authenticated `X-SSO-User` header, or the API will return a `403 Forbidden` response.
-
----
-
-## 🧪 Running the Test Suite
-
-Execute the comprehensive test suite to run all 85+ unit and integration test assertions:
+To run tests, run Ruff format checks, and execute strict type validation:
 
 ```powershell
+# Format and Lint
+uv run ruff format .
+uv run ruff check .
+
+# Type-check
+uv run mypy cli/
+
+# Run Test Suite
 uv run pytest
 ```
+
+---
+
+*Building on first principles, one axiom at a time.*
