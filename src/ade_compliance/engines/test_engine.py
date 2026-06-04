@@ -8,6 +8,11 @@ from ..models.axiom import Violation, ViolationState
 from .base import BaseEngine
 
 
+def _read_file_content(path: Path) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 class TestEngine(BaseEngine):
     async def check(self, files: List[str]) -> List[Violation]:
         if not self.should_run():
@@ -45,17 +50,16 @@ class TestEngine(BaseEngine):
                 # Ideally use AST parsing, for MVP use string search
                 path = Path(test_path)
                 if path.exists():  # In tests we mock open, but check logic uses open
-                    with open(path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        if "time.sleep" in content or "requests.get" in content:
-                            violations.append(
-                                Violation(
-                                    axiom_id="Π.2.2",
-                                    file_path=normalize_project_path(test_path),
-                                    message="Non-deterministic code detected (sleep/network)",
-                                    state=ViolationState.NEW,
-                                )
+                    content = _read_file_content(path)
+                    if "time.sleep" in content or "requests.get" in content:
+                        violations.append(
+                            Violation(
+                                axiom_id="Π.2.2",
+                                file_path=normalize_project_path(test_path),
+                                message="Non-deterministic code detected (sleep/network)",
+                                state=ViolationState.NEW,
                             )
+                        )
             except Exception:
                 # If file read fails (e.g. mocked in test without file), ignore or ensure mock works
                 pass
