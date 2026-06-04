@@ -53,3 +53,10 @@ ade-report.json
 **/.obsidian/graph.json
 **/.obsidian/backlink.json
 **/.obsidian/hotkeys.json
+
+# Speckit workflows, extensions, and agent skills
+.agents/skills/
+.specify/workflows/
+.specify/extensions/
+.gemini/commands/
+.windsurf/workflows/
