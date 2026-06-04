@@ -83,6 +83,19 @@ def _run_checks(
         click.echo(f"Error checking agent status: {e}", err=True)
         sys.exit(3)
 
+    # Expand directories recursively to files with supported suffixes
+    resolved_files = []
+    base_path = Path(".").resolve()
+    for f in files:
+        p = Path(f).resolve()
+        if p.is_dir():
+            for suffix in (".py", ".js", ".ts", ".tsx", ".java"):
+                resolved_files.extend(
+                    str(item.relative_to(base_path)) for item in p.rglob(f"*{suffix}") if item.is_file()
+                )
+        else:
+            resolved_files.append(f)
+
     # Configure active engines
     cfg.engines.spec.enabled = cfg.engines.spec.enabled and run_spec
     cfg.engines.test.enabled = cfg.engines.test.enabled and run_test
@@ -92,7 +105,7 @@ def _run_checks(
 
     # Setup orchestrator & run check
     orch = Orchestrator(cfg)
-    report = asyncio.run(orch.run(files))
+    report = asyncio.run(orch.run(resolved_files))
     return report, cfg
 
 
