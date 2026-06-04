@@ -62,6 +62,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.5.1**  | AI agents must have explicit context files       | Symbiosis requires shared understanding   |
 | **Π.5.1a** | Agents operate within constitutional constraints | Unconstrained agents violate human intent |
 | **Π.5.1b** | Verification confirms AI output matches intent   | Trust requires verification               |
+| **Π.5.1c** | Tooling and skills must not be committed to repos | Keeping git history simple/tool-agnostic  |
 
 ---
 
@@ -82,6 +83,7 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.4.2a** | No circular imports                                                  | Π.4.1a (unidirectional deps)        |
 | **Π.5.2**  | Context files: `.gemini.md`, `.claude.md`, `copilot-instructions.md` | Π.5.1 (explicit context)            |
 | **Π.5.2a** | Constitution files define agent boundaries                           | Π.5.1a (constitutional constraints) |
+| **Π.5.2b** | Gitignore all `.agents/`, `.gemini/`, `.windsurf/`, `.specify/work/`  | Π.5.1c (not committed to repos)     |
 
 ---
 
@@ -96,11 +98,12 @@ Example: Π.1.2 = Second-order postulate derived from Axiom 1
 | **Π.2.3**  | pytest/vitest with strict timeout enforcement                | Π.2.2 (deterministic tests)    |
 | **Π.2.3a** | 60-second maximum for unit test suites                       | Π.2.1 (determinism)            |
 | **Π.3.3**  | ADR template includes traceability section                   | Π.3.2a (governing postulate)   |
-| **Π.3.3a** | ADR IDs: `0001-short-title.md` format                        | Π.3.2 (MADR format)            |
+| **Π.3.3a** | ADRs include "Governing Postulate" field                     | Π.3.2 (MADR format)            |
 | **Π.4.3**  | Python: one class per file for core models                   | Π.4.2 (one responsibility)     |
 | **Π.4.3a** | TypeScript: barrel exports for clean interfaces              | Π.4.2a (no circular imports)   |
 | **Π.5.3**  | Agents must try 3 strategies before escalating               | Π.5.1a (constrained operation) |
 | **Π.5.3a** | Browser agents for UI verification                           | Π.5.1b (verification)          |
+| **Π.5.3b** | Enforce bootstrap commands for context re-scaffolding        | Π.5.2b (gitignore directories)  |
 
 ---
 
