@@ -1,0 +1,364 @@
+name: Automated Security & Quality LLM Fixer
+
+on:
+  # Trigger 1: A security/quality bot posts a comment on a PR
+  issue_comment:
+    types: [created]
+
+  # Trigger 2: A security/quality bot creates a GitHub issue
+  issues:
+    types: [opened]
+
+  # Trigger 3: Manual dispatch for testing
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to remediate findings for'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  security-events: read
+
+jobs:
+  remediate-findings:
+    # Run when the event comes from a recognized security/quality bot, or manual dispatch
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      ||
+      (
+        github.event_name == 'issue_comment'
+        && github.event.issue.pull_request
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.comment.user.login)
+      )
+      ||
+      (
+        github.event_name == 'issues'
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.issue.user.login)
+      )
+    runs-on: ubuntu-latest
+    steps:
+      # -------------------------------------------------------------------
+      # 0. Resolve PR context from the triggering event
+      # -------------------------------------------------------------------
+      - name: Resolve PR Context
+        id: pr-context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          # For issue_comment on a PR, the issue number IS the PR number
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          DISPATCH_PR: ${{ github.event.inputs.pr_number }}
+        shell: bash
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            PR_NUMBER="$DISPATCH_PR"
+            echo "Trigger: manual dispatch for PR #${PR_NUMBER}"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            # issue_comment on a PR — the issue number is the PR number
+            PR_NUMBER="$ISSUE_NUMBER"
+            echo "Trigger: bot comment on PR #${PR_NUMBER}"
+          else
+            # issues:opened — try to find an associated PR
+            # Strategy 1: Parse PR number from issue title/body (bots often include it)
+            PR_NUMBER=""
+            for text in "$ISSUE_TITLE" "$ISSUE_BODY"; do
+              match=$(echo "$text" | grep -oP '#\K[0-9]+' | head -1)
+              if [ -n "$match" ]; then
+                PR_NUMBER="$match"
+                break
+              fi
+            done
+
+            # Strategy 2: Find the most recent open PR on the repo
+            if [ -z "$PR_NUMBER" ]; then
+              echo "::warning::Could not extract PR number from issue. Searching for open PRs..."
+              PR_NUMBER=$(gh pr list --state open --limit 1 --json number --jq '.[0].number' 2>/dev/null || echo "")
+            fi
+
+            if [ -z "$PR_NUMBER" ]; then
+              echo "::error::Cannot determine associated PR. Skipping remediation."
+              exit 0
+            fi
+            echo "Trigger: security/quality issue opened, resolved to PR #${PR_NUMBER}"
+          fi
+
+          # Fetch the PR head branch via the GitHub API
+          HEAD_REF=$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+          if [ -z "$HEAD_REF" ]; then
+            echo "::error::Cannot resolve head branch for PR #${PR_NUMBER}. Skipping."
+            exit 0
+          fi
+
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${HEAD_REF}" >> "$GITHUB_OUTPUT"
+          echo "Resolved: PR #${PR_NUMBER} → branch '${HEAD_REF}'"
+
+      - name: Checkout Code Base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-context.outputs.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install System Dependencies
+        run: pip install requests
+
+      - name: Orchestrate Sonar Extraction & LLM Refactoring
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Optional — public SonarCloud projects work without auth
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}  # Optional — auto-derived from github.repository
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-context.outputs.pr_number }}
+          LLM_API_KEY: ${{ secrets.FREE_LLM_API_KEY }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT || 'https://api.groq.com/openai/v1/chat/completions' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'llama-3.3-70b-versatile' }}
+        shell: python
+        run: |
+          import os
+          import re
+          import sys
+          import json
+          import time
+          import requests
+
+          # ---------------------------------------------------------------------------
+          # Configuration
+          # ---------------------------------------------------------------------------
+          SONAR_HOST   = os.environ.get("SONAR_HOST_URL", "https://sonarcloud.io")
+          SONAR_TOKEN  = os.environ.get("SONAR_TOKEN", "")  # Optional for public repos
+          PR_NUMBER    = os.environ.get("PR_NUMBER", "")
+          LLM_API_KEY  = os.environ.get("LLM_API_KEY", "")
+          LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "")
+
+          # Auto-derive project key from github.repository (org/repo → org_repo)
+          PROJECT_KEY = os.environ.get("SONAR_PROJECT_KEY", "")
+          if not PROJECT_KEY:
+              gh_repo = os.environ.get("GITHUB_REPOSITORY", "")
+              if gh_repo:
+                  PROJECT_KEY = gh_repo.replace("/", "_")
+                  print(f"Auto-derived SONAR_PROJECT_KEY: {PROJECT_KEY}")
+              else:
+                  print("::warning::Cannot derive project key — set SONAR_PROJECT_KEY or GITHUB_REPOSITORY.")
+                  sys.exit(0)
+          LLM_MODEL    = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
+
+          # Context window padding: lines above/below the finding to include
+          CONTEXT_PADDING = 15
+          # Throttle between LLM calls to respect free-tier rate limits
+          THROTTLE_SECONDS = 2
+
+          # ---------------------------------------------------------------------------
+          # Pre-flight validation (only LLM key is truly required)
+          # ---------------------------------------------------------------------------
+          if not LLM_API_KEY:
+              print("::warning::Missing required secret: FREE_LLM_API_KEY. Skipping remediation.")
+              sys.exit(0)
+
+          if not PR_NUMBER:
+              print("::warning::No PR number resolved. Skipping remediation.")
+              sys.exit(0)
+
+          # ---------------------------------------------------------------------------
+          # 1. Fetch unresolved issues from the SonarQube / SonarCloud Web API
+          # ---------------------------------------------------------------------------
+          sonar_url = f"{SONAR_HOST}/api/issues/search"
+          params = {
+              "pullRequest": PR_NUMBER,
+              "componentKeys": PROJECT_KEY,
+              "resolved": "false",
+              "ps": "100",  # page size
+          }
+          # Only add auth header if a token is configured (public repos work without)
+          headers = {}
+          if SONAR_TOKEN:
+              headers["Authorization"] = f"Bearer {SONAR_TOKEN}"
+
+          print(f"Querying SonarQube issues: {sonar_url}")
+          print(f"  Project: {PROJECT_KEY} | PR: {PR_NUMBER}")
+
+          response = requests.get(sonar_url, params=params, headers=headers, timeout=30)
+          if response.status_code != 200:
+              print(f"::error::SonarQube API returned HTTP {response.status_code}: {response.text}")
+              sys.exit(0)
+
+          issues = response.json().get("issues", [])
+          if not issues:
+              print("No outstanding SonarQube violations found for this PR.")
+              sys.exit(0)
+
+          print(f"Found {len(issues)} unresolved issue(s). Beginning remediation loop.\n")
+
+          # ---------------------------------------------------------------------------
+          # 2. Iterate through each isolated finding
+          # ---------------------------------------------------------------------------
+          fixed_count = 0
+          skipped_count = 0
+
+          for idx, issue in enumerate(issues, start=1):
+              rule = issue.get("rule", "unknown")
+              message = issue.get("message", "")
+              severity = issue.get("severity", "UNKNOWN")
+              component = issue.get("component", "")
+              text_range = issue.get("textRange", {})
+
+              # Extract the relative file path from the component key
+              # SonarCloud format: "project-key:path/to/file.py"
+              file_path = component.split(":")[-1] if ":" in component else component
+
+              print(f"--- Issue {idx}/{len(issues)} ---")
+              print(f"  Rule:     {rule}")
+              print(f"  Severity: {severity}")
+              print(f"  File:     {file_path}")
+              print(f"  Message:  {message}")
+
+              # Validate that the file exists on disk and has text range data
+              if not file_path or not os.path.isfile(file_path):
+                  print(f"  Skipping: file not found on disk.")
+                  skipped_count += 1
+                  continue
+              if not text_range:
+                  print(f"  Skipping: no textRange data available.")
+                  skipped_count += 1
+                  continue
+
+              try:
+                  # ---------------------------------------------------------------
+                  # 2a. Read file and extract context window
+                  # ---------------------------------------------------------------
+                  with open(file_path, "r", encoding="utf-8") as f:
+                      file_lines = f.readlines()
+
+                  total_lines = len(file_lines)
+                  start_line = max(0, text_range.get("startLine", 1) - 1)
+                  end_line = min(total_lines, text_range.get("endLine", start_line + 1))
+
+                  # Build a wider context window for better LLM comprehension
+                  ctx_start = max(0, start_line - CONTEXT_PADDING)
+                  ctx_end = min(total_lines, end_line + CONTEXT_PADDING)
+                  context_block = "".join(file_lines[ctx_start:ctx_end])
+
+                  # The exact violation snippet
+                  violation_snippet = "".join(file_lines[start_line:end_line])
+
+                  print(f"  Lines:    {start_line + 1} to {end_line} (context: {ctx_start + 1} to {ctx_end})")
+
+                  # ---------------------------------------------------------------
+                  # 2b. Assemble structured LLM prompt
+                  # ---------------------------------------------------------------
+                  system_prompt = (
+                      "You are a deterministic, elite code refactoring engine. "
+                      "You will receive a block of source code and a specific SonarQube "
+                      "violation detected within it. Your task is to return ONLY the "
+                      "corrected replacement for the VIOLATION SNIPPET — not the entire "
+                      "context block. Preserve the original indentation, style, and "
+                      "surrounding logic exactly. Do NOT include any explanations, "
+                      "apologies, markdown backticks, intro text, or conversational "
+                      "output. Return raw code only."
+                  )
+
+                  user_prompt = (
+                      f"=== CONTEXT (surrounding code for comprehension, do NOT reproduce this) ===\n"
+                      f"{context_block}\n\n"
+                      f"=== VIOLATION SNIPPET (lines {start_line + 1} to {end_line}, replace THIS block) ===\n"
+                      f"{violation_snippet}\n\n"
+                      f"=== SONARQUBE FINDING ===\n"
+                      f"Rule: {rule}\n"
+                      f"Severity: {severity}\n"
+                      f"Message: {message}\n\n"
+                      f"Return ONLY the fixed replacement for the VIOLATION SNIPPET above."
+                  )
+
+                  llm_payload = {
+                      "model": LLM_MODEL,
+                      "messages": [
+                          {"role": "system", "content": system_prompt},
+                          {"role": "user", "content": user_prompt},
+                      ],
+                      "temperature": 0.1,
+                      "max_tokens": 2048,
+                  }
+                  llm_headers = {
+                      "Authorization": f"Bearer {LLM_API_KEY}",
+                      "Content-Type": "application/json",
+                  }
+
+                  # ---------------------------------------------------------------
+                  # 2c. Dispatch to free-tier LLM inference provider
+                  # ---------------------------------------------------------------
+                  llm_res = requests.post(
+                      LLM_ENDPOINT,
+                      json=llm_payload,
+                      headers=llm_headers,
+                      timeout=60,
+                  )
+
+                  if llm_res.status_code != 200:
+                      print(f"  LLM inference failed (HTTP {llm_res.status_code}): {llm_res.text[:200]}")
+                      skipped_count += 1
+                      continue
+
+                  raw_response = llm_res.json()["choices"][0]["message"]["content"].strip()
+
+                  # ---------------------------------------------------------------
+                  # 2d. Strip defensive markdown wrappers the model may hallucinate
+                  # ---------------------------------------------------------------
+                  # Matches ```python, ```java, ```js, ``` etc.
+                  fence_pattern = re.compile(
+                      r"^```[\w]*\s*\n(.*?)```\s*$",
+                      re.DOTALL,
+                  )
+                  match = fence_pattern.match(raw_response)
+                  fixed_code = match.group(1) if match else raw_response
+
+                  # Ensure the replacement ends with a newline for clean splicing
+                  if not fixed_code.endswith("\n"):
+                      fixed_code += "\n"
+
+                  # ---------------------------------------------------------------
+                  # 2e. Splice fixed code back into the file
+                  # ---------------------------------------------------------------
+                  file_lines[start_line:end_line] = [fixed_code]
+
+                  with open(file_path, "w", encoding="utf-8") as f:
+                      f.writelines(file_lines)
+
+                  print(f"  Fix applied.")
+                  fixed_count += 1
+
+              except Exception as exc:
+                  print(f"  Error processing issue: {exc}")
+                  skipped_count += 1
+                  continue
+
+              # Throttle between calls to stay within free-tier rate limits
+              if idx < len(issues):
+                  time.sleep(THROTTLE_SECONDS)
+
+          # ---------------------------------------------------------------------------
+          # 3. Summary
+          # ---------------------------------------------------------------------------
+          print(f"\n{'=' * 60}")
+          print(f"Remediation complete: {fixed_count} fixed, {skipped_count} skipped, {len(issues)} total.")
+          print(f"{'=' * 60}")
+
+      # -------------------------------------------------------------------------
+      # 3. Safe Git Commit and Push Cycle
+      # -------------------------------------------------------------------------
+      - name: Verify Modifications and Commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style(ai): resolve SonarQube findings via LLM remediation [skip ci]"
+          branch: ${{ steps.pr-context.outputs.head_ref }}
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
