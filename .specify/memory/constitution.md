@@ -1,7 +1,7 @@
 <!-- Sync Impact Report
-  Version change: 1.1.0 → 1.1.1 (PATCH — added mandatory environment isolation)
+  Version change: 1.1.1 → 1.1.2 (PATCH — defined Spec-Kit lifecycle phases and recommended agent skills)
   Modified principles:
-    - V. Architectural Constraints: Added mandatory virtual environment requirement (no raw pip)
+    - Development Workflow: Defined core Spec-Kit lifecycle phases, decoupling them from strict tool/agent lock-in while referencing `/speckit-*` command mappings.
   Added sections: None
   Removed sections: None
   Templates status:
@@ -68,14 +68,14 @@ Branch protection for `main`: require PR reviews (minimum 1), require status che
 
 ## Development Workflow
 
-The Spec-Kit lifecycle governs all feature development:
+The Spec-Kit lifecycle governs all feature development. Both Human and Agent developers must advance through these phases (either manually or via loaded agent skills):
 
-1. `specify` — Define requirements
-2. `clarify` — Resolve ambiguities
-3. `plan` — Design architecture
-4. `tasks` — Create work breakdown
-5. `implement` — Execute tasks
-6. `analyze` — Post-implementation review
+1. **Specify** (e.g., `/speckit-specify`) — Define requirements in `spec.md`
+2. **Clarify** (e.g., `/speckit-clarify`) — Resolve ambiguities
+3. **Plan** (e.g., `/speckit-plan`) — Design architecture in `plan.md`
+4. **Tasks** (e.g., `/speckit-tasks`) — Create work breakdown in `tasks.md`
+5. **Implement** (e.g., `/speckit-implement`) — Execute tasks and write test-driven code
+6. **Analyze** (e.g., `/speckit-analyze`) — Post-implementation review and trace verification
 
 ## Governance
 
@@ -88,4 +88,4 @@ This constitution supersedes all other practices within the project scope. Amend
 
 All PRs and reviews MUST verify constitutional compliance. Complexity MUST be justified via the Complexity Tracking table in `plan.md`. Use `.gemini.md`, `.claude.md`, and `copilot-instructions.md` for runtime development guidance.
 
-**Version**: 1.1.1 | **Ratified**: 2026-02-06 | **Last Amended**: 2026-02-06
+**Version**: 1.1.2 | **Ratified**: 2026-02-06 | **Last Amended**: 2026-06-03
