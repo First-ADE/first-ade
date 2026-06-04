@@ -1,0 +1,58 @@
+name: First-ADE Self-Improvement Loop
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Cache LLM Model File
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/first-ade/
+          key: qwen-1.5b-gguf-v1
+
+      - name: Install Project Dependencies
+        run: |
+          uv pip install -e "."
+          uv pip install -e "./cli"
+          uv pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+      - name: Run Autonomous Remediation (Local CPU LLM)
+        run: |
+          uv run python cli/remediate.py
+
+      - name: Verify Fix
+        run: |
+          uv run ade-compliance check-all src/
+
+      - name: Commit and Push Fix
+        if: success()
+        run: |
+          git config --global user.name "First-ADE Agent"
+          git config --global user.email "agent@first-ade.org"
+          # Stage all modified source and test files (excluding any log/temporary files)
+          git add src/ tests/ cli/
+          # Only commit and push if there are changes staged
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: autonomous compliance remediation"
+            git push
+          else
+            echo "No compliance changes to commit."
+          fi
