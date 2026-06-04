@@ -140,3 +140,46 @@ def test_verify_audit_trail_cli_tampered():
         assert result.exit_code == 1
         assert "Tampering or chain corruption detected" in result.output
         assert "Chain broken at entry 3" in result.output
+
+
+def test_run_checks_directory_expansion(tmp_path):
+    """Verify that _run_checks recursively expands directories to supported files."""
+    from ade_compliance.cli import _run_checks
+    from unittest.mock import patch, MagicMock
+
+    # Create dummy directory structure
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    py_file = src_dir / "app.py"
+    py_file.write_text("print('hello')", encoding="utf-8")
+    js_file = src_dir / "index.js"
+    js_file.write_text("console.log('hello')", encoding="utf-8")
+    txt_file = src_dir / "readme.txt"
+    txt_file.write_text("readme", encoding="utf-8")
+
+    sub_dir = src_dir / "components"
+    sub_dir.mkdir()
+    tsx_file = sub_dir / "Button.tsx"
+    tsx_file.write_text("export default Button;", encoding="utf-8")
+
+    config_file = tmp_path / ".ade-compliance.yml"
+    config_file.write_text("global:\n  strictness: audit\n", encoding="utf-8")
+
+    with patch("ade_compliance.cli.Orchestrator") as MockOrch:
+        instance = MockOrch.return_value
+        async def mock_run(files):
+            return MagicMock()
+        instance.run.side_effect = mock_run
+
+        report, cfg = _run_checks([str(src_dir)], str(config_file))
+
+        # Check that orchestrator.run was called with the expanded files list
+        called_args = instance.run.call_args[0][0]
+        # Should contain app.py, index.js, Button.tsx but NOT readme.txt
+        called_files = [f.replace("\\", "/") for f in called_args]
+
+        assert any(f.endswith("src/app.py") for f in called_files)
+        assert any(f.endswith("src/index.js") for f in called_files)
+        assert any(f.endswith("src/components/Button.tsx") for f in called_files)
+        assert not any(f.endswith("readme.txt") for f in called_files)
+
