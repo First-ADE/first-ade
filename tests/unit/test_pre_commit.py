@@ -22,7 +22,7 @@ def test_pre_commit_success():
 
 def test_pre_commit_remediation_success():
     """If check-all fails but remediate succeeds, hook exits 0."""
-    with patch("subprocess.run") as mock_run:
+    with patch("subprocess.run") as mock_run, patch("pathlib.Path.exists", return_value=True):
         mock_run.side_effect = [MagicMock(returncode=1), MagicMock(returncode=0)]
 
         with pytest.raises(SystemExit) as excinfo:
@@ -34,7 +34,7 @@ def test_pre_commit_remediation_success():
 
 def test_pre_commit_remediation_failure():
     """If check-all fails and remediate fails, hook exits 1."""
-    with patch("subprocess.run") as mock_run:
+    with patch("subprocess.run") as mock_run, patch("pathlib.Path.exists", return_value=True):
         mock_run.side_effect = [MagicMock(returncode=1), MagicMock(returncode=1)]
 
         with pytest.raises(SystemExit) as excinfo:
