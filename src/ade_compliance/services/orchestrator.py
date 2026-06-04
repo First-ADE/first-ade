@@ -13,12 +13,7 @@ from ..engines.test_engine import TestEngine
 from ..engines.trace_engine import TraceEngine
 from ..models.report import ComplianceReport
 from ..services.audit import AuditService
-from ..utils.path import sanitize_relative_path
-
-
-def _read_file_content(path: Path) -> str:
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
+from ..utils.path import read_file_content, sanitize_relative_path
 
 
 class Orchestrator:
@@ -107,7 +102,7 @@ class Orchestrator:
                         continue
 
                     if path.exists() and path.suffix.lower() in (".py", ".js", ".ts", ".tsx", ".java"):
-                        content = _read_file_content(path)
+                        content = read_file_content(path)
                         links = self.trace_engine.extract_links(file_path, content)
                         all_links.extend(links)
                 except Exception:
