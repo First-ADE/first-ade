@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "first-ade: ADE Compliance Framework"
+authors:
+  - family-names: Fox
+    given-names: Brandon
+    email: 32090240+brandon-fox@users.noreply.github.com
+repository-code: "https://github.com/First-ADE/first-ade"
+license: MIT
+version: 0.1.0
+date-released: "2026-11-05"
+abstract: "A compliance gateway for Axiom-Driven Engineering: verification engines for specification existence, test alignment, traceability, ADR gating and forbidden test APIs, with a hash-chained audit log."
