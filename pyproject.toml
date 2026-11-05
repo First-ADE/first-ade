@@ -1,6 +1,8 @@
 [project]
 name = "ade-compliance"
 version = "0.1.0"
+authors = [{ name = "Brandon Fox", email = "bfoxtrotfarm@gmail.com" }]
+license = { text = "MIT" }
 description = "ADE Compliance Framework"
 readme = "README.md"
 requires-python = ">=3.11"

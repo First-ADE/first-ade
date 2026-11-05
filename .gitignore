@@ -41,3 +41,7 @@ docs/decisions/index.md
 *.pycc
 **/__pycache__/
 
+
+# ADE audit logs from the quickstart examples
+examples/**/.ade_compliance/
+

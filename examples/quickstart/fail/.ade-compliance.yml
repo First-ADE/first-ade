@@ -1,0 +1,17 @@
+global:
+  strictness: enforce
+  enabled: true
+  audit_path: ".ade_compliance/audit.sqlite"
+
+engines:
+  spec:
+    enabled: true
+    strictness: enforce
+  test:
+    enabled: true
+    strictness: enforce
+  traceability:
+    enabled: true
+    strictness: enforce
+    languages:
+      - python

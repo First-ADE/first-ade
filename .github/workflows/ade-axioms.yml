@@ -1,0 +1,20 @@
+name: ADE axioms
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  axioms:
+    name: First-ADE axiom validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: First-ADE/.github/.github/actions/ade-axioms@main

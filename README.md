@@ -1,6 +1,8 @@
-# ADE Compliance Framework
+# first-ade
 
-An agentic-first, production-grade compliance gateway ensuring absolute adherence to **Axiom-Driven Engineering (ADE)** principles throughout the software development lifecycle.
+> **Status:** active, 0.1.0, single maintainer. The CLI and five verification engines run; the engines are deliberate heuristics (see examples/quickstart/), the FastAPI gateway and escalation queue are less exercised. Not published to PyPI.
+
+The ADE Compliance Framework: a compliance gateway for **Axiom-Driven Engineering (ADE)**. It runs verification engines over a codebase (specification existence, test alignment, traceability markers, ADR gating, forbidden test APIs), keeps a hash-chained audit log, and refuses non-compliant changes before they reach a branch that matters. Try it in five minutes with [examples/quickstart/](examples/quickstart/).
 
 ---
 
@@ -133,3 +135,7 @@ Execute the comprehensive test suite to run all 85+ unit and integration test as
 ```powershell
 uv run pytest
 ```
+
+## Independence
+
+This is a personal project by Brandon Fox, built on my own time and equipment. It is not affiliated with, endorsed by, or derived from the work of any employer, current or former, and does not represent their views, products or practices. Licensed under the MIT License; principles at [First-ADE/PRINCIPLES.md](https://github.com/First-ADE/.github/blob/main/PRINCIPLES.md).
