@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ade-axioms-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -13,8 +17,9 @@ jobs:
   axioms:
     name: First-ADE axiom validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: First-ADE/.github/.github/actions/ade-axioms@b5258c030d1341753a7d902ab85d1649795f567e # main, 2026-11-07 (First-ADE/.github#32 merged)
+      - uses: First-ADE/.github/.github/actions/ade-axioms@827bf315869e11ff2052fe5596c1fc6da5c006ea # main

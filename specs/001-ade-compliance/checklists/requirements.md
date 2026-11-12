@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-02-06
-**Feature**: [spec.md](file:///c:/Users/bfoxt/first-ade/specs/001-ade-compliance/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

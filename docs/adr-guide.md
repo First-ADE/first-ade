@@ -50,7 +50,7 @@ docs/
 
 ## Status
 
-{Proposed | Accepted | Deprecated | Superseded by [ADR-XXXX](./XXXX-title.md)}
+{Proposed | Accepted | Deprecated | Superseded by [ADR-0001](./decisions/0001-adopt-axiom-driven-engineering.md)}
 
 ## Governing Postulate
 
@@ -168,7 +168,7 @@ All repositories will include .specify/ folders for feature specifications.
 ## References
 
 - [Spec-Kit Documentation](https://github.com/First-ADE/specify)
-- [METHODOLOGY.md](./docs/METHODOLOGY.md)
+- [METHODOLOGY.md](./METHODOLOGY.md)
 ```
 
 ---

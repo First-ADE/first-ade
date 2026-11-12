@@ -28,14 +28,3 @@ updates:
       - "ci"
     commit-message:
       prefix: "chore(ci)"
-
-  # Docker dependencies (if applicable)
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-      - "docker"
-    commit-message:
-      prefix: "chore(docker)"
