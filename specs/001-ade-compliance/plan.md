@@ -1,6 +1,6 @@
 # Implementation Plan: ADE Compliance Framework
 
-**Branch**: `001-ade-compliance` | **Date**: 2026-02-06 | **Spec**: [spec.md](file:///c:/Users/bfoxt/first-ade/specs/001-ade-compliance/spec.md)
+**Branch**: `001-ade-compliance` | **Date**: 2026-02-06 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-ade-compliance/spec.md`
 
 ## Summary
