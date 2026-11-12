@@ -1,0 +1,238 @@
+name: Automated Security & Quality LLM Fixer
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to remediate findings for'
+        required: true
+        type: string
+
+concurrency:
+  group: sonar-llm-fix-${{ github.event.issue.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  security-events: read
+
+jobs:
+  remediate-findings:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      ||
+      (
+        github.event_name == 'issue_comment'
+        && github.event.issue.pull_request
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.comment.user.login)
+      )
+      ||
+      (
+        github.event_name == 'issues'
+        && contains(fromJSON('["sonarcloud[bot]","sonarqube[bot]","dependabot[bot]","github-code-scanning[bot]","github-advanced-security[bot]"]'), github.event.issue.user.login)
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up Python Environment
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.11'
+
+      - name: Orchestrate Sonar Extraction & LLM Refactoring via GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          DISPATCH_PR: ${{ github.event.inputs.pr_number }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # pragma: allowlist secret
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }} # pragma: allowlist secret
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LLM_API_KEY: ${{ secrets.FREE_LLM_API_KEY }} # pragma: allowlist secret
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT || 'https://api.groq.com/openai/v1/chat/completions' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'llama-3.3-70b-versatile' }}
+        shell: python
+        run: | # pragma: allowlist secret
+          import base64
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          def _env(key: str, default: str | None = None) -> str:
+              val = os.environ.get(key)
+              if val is not None and val != default:
+                  return val
+              return default or str()
+
+          def _http_json(url: str, method: str = "GET", headers: dict | None = None, payload: dict | None = None) -> tuple[int, dict]:
+              req_headers = dict(headers or {})
+              data = json.dumps(payload).encode("utf-8") if payload is not None else None
+              req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as resp:
+                      body = resp.read().decode("utf-8")
+                      return resp.status, (json.loads(body) if body else {})
+              except urllib.error.HTTPError as exc:
+                  return exc.code, {}
+
+          gh_token = _env("GH_TOKEN")
+          gh_repo = _env("GITHUB_REPOSITORY")
+          event_name = _env("EVENT_NAME")
+          llm_api_key = _env("LLM_API_KEY")
+          llm_endpoint = _env("LLM_ENDPOINT", "https://api.groq.com/openai/v1/chat/completions")
+          llm_model = _env("LLM_MODEL", "llama-3.3-70b-versatile")
+          sonar_host = _env("SONAR_HOST_URL", "https://sonarcloud.io")
+          sonar_token = _env("SONAR_TOKEN")
+          project_key = _env("SONAR_PROJECT_KEY") or gh_repo.replace("/", "_")
+
+          if not llm_api_key or not gh_repo:
+              print("::warning::Missing FREE_LLM_API_KEY or GITHUB_REPOSITORY. Skipping remediation.")
+              sys.exit(0)
+
+          gh_headers = {
+              "Authorization": f"Bearer {gh_token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "First-ADE-Sonar-Remediator",
+          }
+
+          if event_name == "workflow_dispatch":
+              pr_number = _env("DISPATCH_PR")
+          elif event_name == "issue_comment":
+              pr_number = _env("ISSUE_NUMBER")
+          else:
+              pr_number = str()
+              for text in (_env("ISSUE_TITLE"), _env("ISSUE_BODY")):
+                  m = re.search(r"#([0-9]+)", text)
+                  if m:
+                      pr_number = m.group(1)
+                      break
+
+          if not pr_number or not pr_number.isdigit():
+              print("::warning::No valid PR number resolved. Skipping remediation.")
+              sys.exit(0)
+
+          pr_url = f"https://api.github.com/repos/{gh_repo}/pulls/{pr_number}"
+          status, pr_data = _http_json(pr_url, headers=gh_headers)
+          if status != 200:
+              print(f"::warning::Unable to fetch PR #{pr_number} (HTTP {status}).")
+              sys.exit(0)
+
+          head_ref = pr_data.get("head", {}).get("ref", str())
+          head_repo = pr_data.get("head", {}).get("repo", {}).get("full_name", str())
+          if not head_ref or head_repo != gh_repo:
+              print("::warning::PR head branch is missing or from an external fork. Skipping remediation.")
+              sys.exit(0)
+
+          sonar_params = urllib.parse.urlencode({
+              "pullRequest": pr_number,
+              "componentKeys": project_key,
+              "resolved": "false",
+              "ps": "100",
+          })
+          sonar_headers = {"Authorization": f"Bearer {sonar_token}"} if sonar_token else {}
+          s_status, s_data = _http_json(f"{sonar_host}/api/issues/search?{sonar_params}", headers=sonar_headers)
+          issues = s_data.get("issues", []) if s_status == 200 else []
+          if not issues:
+              print("No unresolved SonarQube issues found for this PR.")
+              sys.exit(0)
+
+          fence_re = re.compile(r"^\x60\x60\x60[\w]*\s*\n(.*?)\x60\x60\x60\s*$", re.DOTALL)
+          fixed_count = 0
+
+          for idx, issue in enumerate(issues, start=1):
+              rule = issue.get("rule", "unknown")
+              message = issue.get("message", str())
+              severity = issue.get("severity", "UNKNOWN")
+              component = issue.get("component", str())
+              text_range = issue.get("textRange", {})
+              file_path = component.split(":")[-1] if ":" in component else component
+              if not file_path or not text_range or file_path.startswith(".github/workflows/"):
+                  continue
+
+              encoded_path = urllib.parse.quote(file_path, safe="/")
+              contents_url = f"https://api.github.com/repos/{gh_repo}/contents/{encoded_path}?ref={urllib.parse.quote(head_ref, safe='')}"
+              c_status, c_data = _http_json(contents_url, headers=gh_headers)
+              if c_status != 200 or "content" not in c_data:
+                  continue
+
+              file_sha = c_data["sha"]
+              raw_text = base64.b64decode(c_data["content"]).decode("utf-8")
+              file_lines = raw_text.splitlines(keepends=True)
+              total_lines = len(file_lines)
+              start_line = max(0, text_range.get("startLine", 1) - 1)
+              end_line = min(total_lines, text_range.get("endLine", start_line + 1))
+              ctx_start = max(0, start_line - 15)
+              ctx_end = min(total_lines, end_line + 15)
+
+              context_block = str().join(file_lines[ctx_start:ctx_end])
+              violation_snippet = str().join(file_lines[start_line:end_line])
+
+              system_prompt = (
+                  "You are a deterministic code refactoring engine. Return ONLY the corrected "
+                  "replacement for the VIOLATION SNIPPET, preserving original indentation and "
+                  "logic. Do NOT include explanations or markdown code fences."
+              )
+              user_prompt = (
+                  f"=== CONTEXT ===\n{context_block}\n\n"
+                  f"=== VIOLATION SNIPPET (lines {start_line + 1} to {end_line}) ===\n{violation_snippet}\n\n"
+                  f"=== SONARQUBE FINDING ===\nRule: {rule} ({severity})\nMessage: {message}\n\n"
+                  "Return ONLY the fixed replacement for the VIOLATION SNIPPET."
+              )
+
+              llm_headers = {
+                  "Authorization": f"Bearer {llm_api_key}",
+                  "Content-Type": "application/json",
+              }
+              llm_payload = {
+                  "model": llm_model,
+                  "messages": [
+                      {"role": "system", "content": system_prompt},
+                      {"role": "user", "content": user_prompt},
+                  ],
+                  "temperature": 0.1,
+                  "max_tokens": 2048,
+              }
+              l_status, l_data = _http_json(llm_endpoint, method="POST", headers=llm_headers, payload=llm_payload)
+              if l_status != 200:
+                  continue
+
+              choices = l_data.get("choices", [])
+              if not choices:
+                  continue
+              raw_reply = choices[0].get("message", {}).get("content", str()).strip()
+              m_fence = fence_re.match(raw_reply)
+              fixed_code = m_fence.group(1) if m_fence else raw_reply
+              if not fixed_code.endswith("\n"):
+                  fixed_code += "\n"
+
+              file_lines[start_line:end_line] = [fixed_code]
+              updated_b64 = base64.b64encode(str().join(file_lines).encode("utf-8")).decode("ascii")
+              put_url = f"https://api.github.com/repos/{gh_repo}/contents/{encoded_path}"
+              put_payload = {
+                  "message": f"style(ai): resolve SonarQube {rule} in {file_path}",
+                  "content": updated_b64,
+                  "sha": file_sha,
+                  "branch": head_ref,
+              }
+              p_status, _ = _http_json(put_url, method="PUT", headers=gh_headers, payload=put_payload)
+              if p_status in (200, 201):
+                  fixed_count += 1
+              if idx < len(issues):
+                  time.sleep(2)
+
+          print(f"Remediation complete: {fixed_count} fixed out of {len(issues)} issue(s).")
