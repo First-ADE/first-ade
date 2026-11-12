@@ -1,6 +1,6 @@
 # Implementation Plan: Prime-Agent Context Hooks & Alignment
 
-**Branch**: `feat/prime-agent-hooks` | **Date**: 2026-06-03 | **Spec**: [spec.md](file:///c:/Users/bfoxt/OneDrive/Desktop/First-ADE/first-ade/specs/004-prime-agent/spec.md)
+**Branch**: `feat/prime-agent-hooks` | **Date**: 2026-06-03 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/004-prime-agent/spec.md`
 
 ## Summary
